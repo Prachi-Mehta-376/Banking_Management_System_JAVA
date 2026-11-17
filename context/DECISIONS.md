@@ -1,6 +1,6 @@
 # Architecture Decision Records (`DECISIONS.md`)
 
-> **Governance Rule:** No decision is `ACCEPTED` until reviewed and agreed by teammates **S**, **P**, and **R**. Approval dates must never be fabricated; unapproved items remain `PROPOSED` or `PROVISIONAL`.
+> **Governance Rule:** Technical resolution and human sign-off are distinct. Decisions A–F resolved the remaining M1 contract questions technically, so `ADR-001`–`ADR-008` are marked **`RECOMMENDED — AWAITING APPROVAL`**. Do **not** mark any ADR `ACCEPTED` until teammates **S**, **P**, and **R** approve PR #1.
 
 ---
 
@@ -8,115 +8,135 @@
 
 ```markdown
 ### ADR-XXX: <Concise Decision Title>
-- **Status:** PROPOSED | PROVISIONAL | ACCEPTED | SUPERSEDED | DEPRECATED
+- **Status:** PROPOSED | PROVISIONAL | RECOMMENDED — AWAITING APPROVAL | ACCEPTED | SUPERSEDED | DEPRECATED
 - **Date:** Pending Team Approval (record YYYY-MM-DD when accepted)
 - **Context:** What architectural problem or constraint requires a choice?
 - **Alternatives:** Viable options considered.
-- **Decision:** The chosen approach.
+- **Decision:** The finalized recommended approach.
 - **Rationale:** Why this choice fits UCS553 goals, reliability, and maintainability.
-- **Consequences:** Trade-offs, constraints, and follow-up obligations.
+- **Consequences & Outstanding Dependencies:** Trade-offs, integration effects, and any remaining external/team gates.
 - **Related Documents:** Relative links to affected files.
 ```
 
 ---
 
-## 2. Initial Decision Register
+## 2. Decision Register (`ADR-001` through `ADR-008`)
 
 ### `ADR-001`: Core Technology Stack Alignment with UCS553
-- **Status:** `PROVISIONAL`
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
 - **Date:** Pending Team Approval
-- **Context:** The project must implement a desktop Banking Management System that aligns closely with the **UCS553 — Enterprise Web Application** syllabus without introducing complex external enterprise frameworks.
+- **Context:** The project must implement a desktop Banking Management System aligned with **UCS553 — Enterprise Web Application** without external enterprise frameworks.
 - **Alternatives:**
-  1. Core Java 17 + JavaFX + Plain JDBC + SQLite + Maven.
-  2. Spring Boot + Hibernate/JPA + web frontend (React/HTML).
-  3. Swing + serialized flat files (no relational database).
-- **Decision:** Use **Java 17, JavaFX, Plain JDBC, SQLite, and Maven**, utilizing standard JDK APIs (Collections, Generics, Custom Exceptions, Java I/O, `java.util.logging`).
-- **Rationale:** Directly demonstrates core enterprise Java concepts taught in UCS553 (JDBC transaction management, DAO pattern, layered OOP, desktop GUI) with zero server deployment overhead.
-- **Consequences:** Requires manual dependency wiring (`bootstrap/`) and explicit JDBC SQL/transaction boilerplate rather than framework auto-configuration.
+  1. Java 17 + JavaFX + Plain JDBC + SQLite + Maven.
+  2. Spring Boot + Hibernate/JPA + React/web frontend.
+  3. Swing + serialized flat files.
+- **Decision:** Use **Java 17, JavaFX, Plain JDBC, SQLite, and Maven**, using standard JDK capabilities (Collections, Generics, Custom Exceptions, Java I/O, `java.util.logging`).
+- **Rationale:** Directly covers syllabus concepts (JDBC transactions, DAO pattern, layered OOP, desktop GUI) with zero framework overhead.
+- **Consequences & Outstanding Dependencies:** Requires manual dependency wiring in `bootstrap/` (`S`) and explicit SQLite JDBC boilerplate (`P`). Outstanding dependency: PR #1 approval + M2 `pom.xml` creation.
 - **Related Documents:** [00_MASTER_PROJECT_CONTEXT.md](00_MASTER_PROJECT_CONTEXT.md), [TECHNICAL_CONTEXT.md](TECHNICAL_CONTEXT.md).
 
 ---
 
-### `ADR-002`: Strict Three-Tier Layered Architecture
-- **Status:** `PROVISIONAL`
-- **Date:** Pending Team Approval
-- **Context:** Three teammates (`S`, `P`, `R`) need clear architectural seams so UI, business logic, and SQL persistence can evolve cleanly without tight coupling.
+### `ADR-002`: Simplified Layered Architecture & Unified Customer Principal
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (M0 drafted; simplified in M1)
+- **Context:** Three teammates (`S`, `P`, `R`) need clear architectural boundaries without bloated wrapper layers or redundant entities.
 - **Alternatives:**
-  1. Strict unidirectional three-tier architecture (`ui` -> `service` -> `dao` -> `db`).
-  2. JavaFX controllers executing JDBC queries directly (Smart UI anti-pattern).
-- **Decision:** Enforce strict unidirectional dependencies: `ui.*` communicates solely with `service.*` via `dto.*` / domain models; `service.*` communicates with persistence solely through `dao.*` interfaces.
-- **Rationale:** Enables parallel development, unit testing of business rules without JavaFX or SQLite UI coupling, and clear ownership boundaries.
-- **Consequences:** Requires well-defined DTOs and service interfaces before parallel coding accelerates in M2/M3.
-- **Related Documents:** [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md), [../docs/architecture/SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md).
+  1. Strict unidirectional layered flow (`JavaFX UI -> Business Services -> DAO Interfaces -> JDBC -> SQLite`) with a unified `users` table and 1:1 `accounts` table in v1.
+  2. Separate `customers` table + `CustomerDao` + `CustomerService` (M0 initial draft).
+  3. Direct JDBC inside JavaFX controllers (rejected).
+- **Decision:** Keep strict unidirectional layering (`ui` -> `service` -> `dao` -> `db`) and merge customer profile fields (`full_name`, `email`) into `users` (`role = 'CUSTOMER'`) with `1` account per customer in v1 (`UNIQUE(user_id)` on `accounts`).
+- **Rationale:** Removes redundant joins and extra DAO/Service boilerplate while maintaining full normalization and service-layer security.
+- **Consequences & Outstanding Dependencies:** Fixes P0 schema at 5 tables and P0 business services at 5 focused contracts (`AuthService`, `CustomerBankingService`, `TellerService`, `StaffService`, `AdminService`). Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md), [../docs/architecture/DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md).
 
 ---
 
-### `ADR-003`: Monetary Representation & Precision Strategy
-- **Status:** `PROPOSED`
-- **Date:** Pending Team Approval
-- **Context:** Financial systems cannot tolerate IEEE-754 floating-point rounding inaccuracies (`float`/`double`), and SQLite lacks a native fixed-point `DECIMAL` storage class (converting numeric values to `REAL`/`INTEGER`/`TEXT` by affinity).
+### `ADR-003`: Integer-Paise (`long`) Monetary Storage & `BigDecimal` Boundary Validation
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (Finalized in M1)
+- **Context:** Monetary calculations cannot tolerate floating-point drift (`float`/`double`), SQLite lacks a native `DECIMAL` type, and Java arithmetic must prevent overflow and excessive decimal precision.
 - **Alternatives:**
-  1. `BigDecimal` in Java domain/DTOs mapped to `INTEGER` minor units (`paise`, i.e., `long` = `amount * 100`) in SQLite.
-  2. `BigDecimal` in Java mapped to canonical fixed-scale `TEXT` in SQLite.
-  3. `double` in Java and `REAL` in SQLite (rejected).
-- **Decision:** Strictly prohibit `float`/`double`/`REAL` for monetary values. Propose **`BigDecimal` (scale 2)** in Java paired with **integer minor units (`paise`)** in SQLite (pending final `S` + `P` confirmation during M1).
-- **Rationale:** Integer minor units in SQLite allow exact `SUM()` reconciliation and `CHECK (balance_paise >= 0)` SQL constraints without floating-point drift, while `BigDecimal` provides clean Java formatting and precision arithmetic.
-- **Consequences:** DAO mappers must deterministically convert between minor-unit `long` columns and `BigDecimal` amounts.
-- **Related Documents:** [TECHNICAL_CONTEXT.md](TECHNICAL_CONTEXT.md), [../docs/architecture/DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md), [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+  1. Persist and calculate internally as 64-bit integer **paise** (`long` in Java / `INTEGER` in SQLite), using `BigDecimal` inside `Money` for input parsing, scale validation, and display formatting.
+  2. Store `BigDecimal` internally everywhere and persist `TEXT` strings in SQLite.
+  3. Use `double` / `REAL` (rejected).
+- **Decision:** Persist all monetary columns as **integer paise (`INTEGER`)**, compute internally using Java **`long`** with `Math.addExact`/`Math.subtractExact` (`INV-12`), and parse/validate boundary inputs using `BigDecimal` (`Money` rejects `<= 0`, `scale > 2`, and overflow — `INV-02`).
+- **Rationale:** Combines exact SQLite `CHECK (balance_paise >= 0)` and integer `SUM(delta_paise)` reconciliation with accurate decimal boundary validation.
+- **Consequences & Outstanding Dependencies:** `S` implements `Money`; `P` maps `long` columns; `R` renders formatted strings (`AccountSummary`, `TransactionView`) without `double`. Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md), [../docs/architecture/SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md).
 
 ---
 
-### `ADR-004`: Service-Boundary Database Transaction Coordination
-- **Status:** `PROPOSED`
-- **Date:** Pending Team Approval
-- **Context:** Fund transfers require multiple SQL mutations (validate/lock accounts, update source balance, update target balance, record ledger entry, record audit entry) that must succeed or fail atomically.
+### `ADR-004`: `TransactionExecutor` Coordination, Audit Atomicity & Uncertain Commit Handling
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (Finalized in M1 via Decisions B, D, E)
+- **Context:** Multi-step financial mutations require one shared JDBC `Connection` (`INV-03`), sensitive admin/staff mutations require accurate audit logging, and commit-time I/O failures must not trigger unsafe automatic retries.
 - **Alternatives:**
-  1. Explicit transaction coordinator (`db/` transaction manager / thread-scoped or callback-managed `Connection` with `autoCommit = false`) invoked by services (`S`) and honored by DAOs (`P`).
-  2. Auto-commit per DAO method call (rejected — unsafe for transfers).
-  3. Placing multi-table transfer SQL inside a single monolithic DAO method (blurs business logic into persistence).
-- **Decision:** Coordinate transactions at the **Business Service boundary** using an explicit transaction abstraction provided by `db/` (`P`), without exposing raw JDBC setup boilerplate throughout UI or unrelated services.
-- **Rationale:** Keeps business orchestration in `service/` (`S`) while keeping SQLite `Connection` lifecycle and rollback handling cleanly encapsulated in `db/` (`P`).
-- **Consequences:** `S` and `P` must finalize the exact transaction helper contract in M1 (`RISK-01`).
-- **Related Documents:** [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md), [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+  1. Explicit `TransactionExecutor` + `TransactionWork<T>` + `BankingUnitOfWork` sharing one SQLite `Connection`, same-transaction `audit_events` for successful state mutations, `java.util.logging` for failures/denials, and `CommitOutcomeUncertainException` without automatic retries.
+  2. ThreadLocal hidden `Connection` management or auto-retry loops on commit failure (rejected).
+- **Decision:**
+  - Use **`TransactionExecutor`**, **`TransactionWork<T>`**, and **`BankingUnitOfWork`** (`db/`) so `P` manages connection lifecycle, `PRAGMA foreign_keys = ON`, `autoCommit = false`, `commit()`, `rollback()`, and SQLite `busy_timeout`, while `S` owns business validation and journal orchestration.
+  - **Audit Behavior (`Decision D`):** Write `audit_events` inside the same database transaction for sensitive state changes so rolled-back failures never leave false success audit rows; log rejected/failed attempts via `java.util.logging` without secrets or customer PII.
+  - **Uncertain Commits (`Decision E`):** Distinguish pre-commit failures, confirmed commits, and uncertain commit outcomes (`CommitOutcomeUncertainException` carrying `referenceId` when available). Never automatically repeat ambiguous financial operations; direct the user to inspect history / `referenceId`.
+  - **P0 vs. P1 Idempotency (`Decision B`):** Omit client `idempotencyKey` from P0 APIs while generating a unique server `reference_id` per committed operation; keep persistent client-request idempotency in P1.
+- **Consequences & Outstanding Dependencies:** Keeps P0 simple and deterministic while acknowledging that a local desktop client cannot automatically disambiguate a mid-`commit()` I/O fault without P1 idempotency. Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md), [../docs/architecture/SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md).
 
 ---
 
-### `ADR-005`: Three-Role RBAC & Service-Layer Ownership Enforcement
-- **Status:** `PROPOSED`
-- **Date:** Pending Team Approval
-- **Context:** The application serves `Customer`, `Bank Staff`, and `Administrator` roles with distinct privileges and sensitive balance/account operations.
+### `ADR-005`: Three-Role RBAC, Non-Teller Admin & Read-Only Oversight
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (Finalized in M1 via Decision C)
+- **Context:** Privileges across `CUSTOMER`, `STAFF`, and `ADMIN` must enforce clear operational boundaries at the service layer (`INV-05`, `INV-06`).
 - **Alternatives:**
-  1. UI-only menu hiding based on logged-in role.
-  2. Mandatory service-layer RBAC + customer-account ownership verification backed by a session security context (`security/`), complemented by UI role routing.
-- **Decision:** Enforce both **role permissions** and **customer-to-account ownership checks** inside the Service/Security layer (`S`), treating JavaFX UI gating solely as a UX convenience.
-- **Rationale:** Prevents privilege escalation or accidental data leakage across customer accounts regardless of how UI views invoke services.
-- **Consequences:** Services require access to the active authenticated principal/session context (`SecurityContext` or explicit principal argument, to be finalized in M1).
-- **Related Documents:** [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md), [../AGENTS.md](../AGENTS.md).
+  1. Deny `ADMIN` all customer lookup methods vs. grant `ADMIN` read-only customer/account search & history inspection while strictly reserving cash teller actions to `STAFF`.
+  2. Allow `ADMIN` automatic teller privileges (rejected).
+- **Decision:** Enforce all role and ownership checks inside Business Services (`S`) using active `UserSession`. **`ADMIN`** has read-only customer/account lookup (`StaffService`) where needed for oversight (`Decision C`), **never** gains `TellerService` cash deposit/withdrawal permissions, and **`CUSTOMER`** accesses strictly their own single account (`userId` resolved from session).
+- **Rationale:** Preserves separation of duties between branch cash operations (`STAFF`) and governance (`ADMIN`) without hindering administrative troubleshooting.
+- **Consequences & Outstanding Dependencies:** `StaffService` accepts `STAFF` or `ADMIN` (read-only); `TellerService` accepts `STAFF` only; `CustomerBankingService` accepts `CUSTOMER` only. Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md), [../docs/architecture/SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md).
 
 ---
 
-### `ADR-006`: Equal Peer Module Ownership & Contract-First Collaboration
-- **Status:** `PROVISIONAL`
+### `ADR-006`: Equal Peer Module Ownership & Student-Proportionate Simplicity
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
 - **Date:** Pending Team Approval
-- **Context:** Three teammates (`S`, `P`, `R`) collaborate asynchronously across Git branches on a shared repository.
+- **Context:** Three undergraduate students (`S`, `P`, `R`) collaborate on a shared repository under tight academic deadlines (`UCS553`).
 - **Alternatives:**
-  1. Ad-hoc shared ownership of every file (high merge-conflict risk).
-  2. Defined primary module ownership (`S`: Engine/Security/Integration, `P`: DB/JDBC, `R`: JavaFX UI) with shared review on cross-module contracts.
-- **Decision:** Assign clear primary package ownership across `S`, `P`, and `R` as equal peers (no designated lead), integrating via agreed M1 contracts and cross-reviewed PRs.
-- **Rationale:** Minimizes merge conflicts, clarifies accountability for academic evaluation, and allows `R` to build JavaFX screens against agreed contracts/sample providers while `S` and `P` build backend components.
-- **Consequences:** Changes to `model/`, `dto/`, or `service/` interfaces require cross-team notice and contract documentation updates.
-- **Related Documents:** [../docs/team_handoffs/01_S_BANKING_ENGINE.md](../docs/team_handoffs/01_S_BANKING_ENGINE.md), [02_P_DATABASE_AND_JDBC.md](../docs/team_handoffs/02_P_DATABASE_AND_JDBC.md), [03_R_JAVAFX_AND_UX.md](../docs/team_handoffs/03_R_JAVAFX_AND_UX.md).
+  1. Defined peer ownership (`S`: Banking Engine/Security/Integration, `P`: Database/JDBC, `R`: JavaFX UI) with simple, readable Core Java conventions.
+  2. Heavy enterprise abstractions (DI containers, factory hierarchies, event buses) — rejected.
+- **Decision:** Maintain equal peer ownership across `S`, `P`, and `R` (no designated leader), allow `S` to support startup/navigation wiring during integration without removing `R`'s ownership of presentation, and enforce strict simplicity/comment rules ([../AGENTS.md](../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration)).
+- **Rationale:** Protects delivery velocity, avoids overengineering, and keeps every module explainable by student contributors.
+- **Consequences & Outstanding Dependencies:** Cross-module changes require PR review across affected owners. Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../AGENTS.md](../AGENTS.md), [../docs/team_handoffs/01_S_BANKING_ENGINE.md](../docs/team_handoffs/01_S_BANKING_ENGINE.md), [02_P_DATABASE_AND_JDBC.md](../docs/team_handoffs/02_P_DATABASE_AND_JDBC.md), [03_R_JAVAFX_AND_UX.md](../docs/team_handoffs/03_R_JAVAFX_AND_UX.md).
 
 ---
 
-### `ADR-007`: Immutable Transaction Ledger Records
-- **Status:** `PROPOSED`
-- **Date:** Pending Team Approval
-- **Context:** Simply updating an `accounts.balance` column loses traceability, prevents reconciliation, and invites silent accounting discrepancies.
+### `ADR-007`: Balance-Plus-Transaction-Journal Model & Non-Destructive Reconciliation
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (Revised from M0 single-table draft)
+- **Context:** Transfers and deposits need atomic journal tracking (`INV-08`, `INV-09`), zero-sum transfer checks (`INV-04`), and P1 balance reconciliation (`INV-11`) without enterprise general-ledger complexity.
 - **Alternatives:**
-  1. Update account balance column without mandatory immutable transaction rows.
-  2. Treat transaction/ledger rows as append-only immutable records paired with balance updates inside the same atomic DB transaction, supporting balance reconciliation.
-- **Decision:** Require every balance-changing operation (deposit, withdrawal, transfer) to write immutable transaction record(s) atomically alongside the account balance update, and prohibit `UPDATE`/`DELETE` on historical transaction records.
-- **Rationale:** Enables customer transaction history, administrative balance reconciliation (P1), and academic explainability.
-- **Consequences:** Reversals or disputes (if implemented in P2) must create compensating transactions rather than deleting history.
-- **Related Documents:** [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md), [../docs/architecture/DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md).
+  1. Balance-plus-transaction-journal (`operations` + signed `transactions` entries + updated `accounts.balance_paise`).
+  2. Single flat `transactions` table (M0 draft) or full bank-wide double-entry general ledger (rejected).
+- **Decision:** Adopt the **balance-plus-transaction-journal** model (`operations` + `transactions`), writing 1 entry per affected account per operation (`+delta` deposit, `-delta` withdrawal, `-delta` and `+delta` summing to `0` for transfer), supporting non-destructive P1 reconciliation (`expected = SUM(delta_paise)`). Explicitly document that cash deposits/withdrawals are simulated external money movements, not a full general ledger.
+- **Rationale:** Cleanly preserves running per-account snapshots (`balance_after_paise`), operation grouping (`reference_id`), and simple `SUM()` reconciliation.
+- **Consequences & Outstanding Dependencies:** P0 `operations` and `transactions` DAOs are append/read-only. Outstanding dependency: PR #1 team sign-off (plus optional P2 verification after Gemini Deep Research review).
+- **Related Documents:** [../docs/architecture/DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md), [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md).
+
+---
+
+### `ADR-008`: First-Run Admin Bootstrap, Registration, `AC000001` Account Numbers & v1 Lifecycle
+- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Date:** Pending Team Approval (Finalized in M1 via Decisions A, F)
+- **Context:** M0 left open initial administrator setup without default passwords, customer registration vs. account creation, synthetic account-number generation, and v1 account statuses.
+- **Alternatives:**
+  1. First-run local Admin bootstrap with user-supplied password + atomic setup lock; public Customer registration creating 1 `ACTIVE` account at `0` paise; deterministic `AC000001` account numbers derived from `accounts.id`; and two v1 statuses (`ACTIVE`, `FROZEN`).
+  2. Hardcoded default admin credentials or random uncoordinated account strings (rejected).
+- **Decision:**
+  - **First-Run Admin (`Decision F`):** Available only when `COUNT(ADMIN) == 0`; uses user-supplied password hashed with salted `PBKDF2`; re-checks `COUNT(ADMIN) == 0` inside `TransactionExecutor` so concurrent/repeated attempts cannot create multiple bootstrap admins; no public `ADMIN` registration.
+  - **Customer Registration & Account Numbers (`Decision A`):** Public registration hardcodes `role = CUSTOMER` and atomically inserts the `accounts` row (`balance_paise = 0`, `status = ACTIVE`), formatting `account_number` from assigned `accounts.id` (`AC000001` format) inside the same transaction. Account numbers are unique, never reused, stored with `UNIQUE`, and treated as public identifiers rather than secrets.
+  - **v1 Account States:** `ACTIVE` and `FROZEN` only (account closure out of P0 scope); `FROZEN` permits customer viewing of own balance/history while rejecting deposits, withdrawals, incoming transfers, and outgoing transfers (`INV-07`).
+- **Rationale:** Eliminates default-password risks, ensures atomic unique account numbers without collision loops, and keeps v1 state rules concise.
+- **Consequences & Outstanding Dependencies:** `AccountDao.createAccount` handles insert + ID retrieval + `AC%06d` update atomically. Outstanding dependency: PR #1 team sign-off.
+- **Related Documents:** [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md), [../docs/architecture/DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md).

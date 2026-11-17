@@ -1,63 +1,36 @@
 # Known Issues, Design Risks & Open Questions (`KNOWN_ISSUES.md`)
 
-> **Important:** No application code exists yet. This register tracks **architectural design risks and unresolved decisions**—not fabricated software bugs.
+> **Important:** No application code exists yet. Section 1 summarizes design risks technically resolved by M1 Decisions A–F (awaiting PR #1 approval). Section 2 lists active environmental/project limitations.
 
 ---
 
-## 1. Open Design Risks & Questions Register
+## 1. Technically Resolved in M1 (`AWAITING PR #1 TEAM APPROVAL`)
 
-### `RISK-01` — Database Transaction Ownership (`OPEN DESIGN QUESTION`)
-- **Area:** Service Layer (`S`) <-> Persistence Layer (`P`)
-- **Question:** How should multi-DAO atomic operations (e.g., debit source account + credit target account + insert transaction + insert audit log) share a single JDBC `Connection` without leaking `java.sql.Connection` into business service signatures?
-- **Options Under Evaluation:**
-  1. A `TransactionManager` / `TransactionTemplate` callback in `db/` using a thread-bound or context-bound `Connection` that DAOs retrieve automatically.
-  2. Explicit `Connection` or lightweight `UnitOfWork` token passed from service through DAO methods.
-- **Impact if Unresolved:** Risk of partial commits (money debited without corresponding credit) or broken layer separation.
-- **Related:** `ADR-004` in [DECISIONS.md](DECISIONS.md), [../docs/architecture/TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md).
+- **`RISK-01` — Database Transaction Ownership:** Resolved via `TransactionExecutor`, `TransactionWork<T>`, and `BankingUnitOfWork` (`ADR-004`), sharing one SQLite `Connection` per operation.
+- **`RISK-02` — Authorization Enforcement Boundary:** Resolved via service-layer `UserSession` role & single-account `userId` checks (`ADR-005`), non-teller `ADMIN` restriction, and read-only `ADMIN` search (`Decision C`).
+- **`RISK-04` — Simulation Liquidity & Opening Balance:** Resolved via `ADR-008`: public customer registration creates 1 `ACTIVE` account at `0` paise; only `STAFF` cash ops add/remove simulated funds; transfers sum to `0` (`INV-04`).
+- **`RISK-05` — Account Lifecycle States:** Resolved via v1 `ACTIVE`/`FROZEN` policy (closure out of P0 scope); `FROZEN` permits read-only history/balance viewing and blocks deposits, withdrawals, incoming and outgoing transfers (`INV-07`).
+- **`RISK-06` — Audit Atomicity & Failed Attempts (`Decision D`):** Resolved: sensitive state changes write `audit_events` in the same DB transaction so rolled-back transactions never leave misleading success rows; rejected/failed attempts log via `java.util.logging` without passwords or sensitive customer data.
+- **`RISK-09` — Cross-Team Contract Details:** All three M1 open items resolved (`Decision A`: `AC000001` from `accounts.id`; `Decision B`: no `idempotencyKey` in P0 APIs; `Decision C`: `ADMIN` gets read-only `StaffService` customer/account search).
+- **`RISK-10` — Uncertain Commit Outcomes (`Decision E`):** Resolved: distinguish pre-commit failure, confirmed commit, and `CommitOutcomeUncertainException` on commit I/O failure; never automatically retry financial operations; instruct user to inspect history / `referenceId`.
 
-### `RISK-02` — Authorization Enforcement Boundary (`DESIGN RISK`)
-- **Area:** Presentation (`R`) <-> Service & Security (`S`)
-- **Question:** How do we ensure UI navigation guards never become the sole authorization check?
-- **Risk:** If role/ownership checks exist only by hiding buttons in JavaFX, a bug or future caller invoking a service method directly could allow cross-customer data exposure or unauthorized balance changes.
-- **Mitigation Direction:** Every protected service method must explicitly validate the authenticated session principal, allowed roles, and customer-account ownership (`ADR-005`).
+---
+
+## 2. Active Environmental & Project Risks
 
 ### `RISK-03` — SQLite Local-File Security & Concurrency Limitations (`TECHNICAL LIMITATION`)
 - **Area:** Persistence (`P`)
-- **Context:** SQLite is an embedded local database file (`data/*.db`) with single-writer locking and no built-in multi-user server authentication.
-- **Risks:**
-  1. Concurrent writes across threads or background tasks could trigger `SQLITE_BUSY` lock errors unless serialized or configured with busy timeouts and WAL mode.
-  2. Any OS user with filesystem read access to the SQLite file can inspect stored tables directly (mitigated educationally via password hashing, never storing plaintext passwords, and documenting simulation limits honestly).
+- **Context:** SQLite is an embedded desktop database file (`data/*.db`) with single-writer locking and no multi-user network server isolation.
+- **Limitations:**
+  1. Concurrent writes require `PRAGMA busy_timeout = 5000` and `BEGIN IMMEDIATE` write-lock discipline to avoid `SQLITE_BUSY` failures (`TC-12`).
+  2. An OS user with direct filesystem access to `data/*.db` can bypass application controls externally; local SQLite is an academic simulation, not a hardened banking deployment (`Decision F`).
 
-### `RISK-04` — Banking Simulation Money Creation & Conservation Rules (`OPEN DESIGN QUESTION`)
-- **Area:** Domain Logic (`S`)
-- **Question:** How does simulated money legitimately enter and leave the system?
-- **Proposal:** Only **Bank Staff** counter operations (simulated cash deposit / withdrawal) alter total system liability; **Customer transfers** must strictly preserve total system balance (`sum(debits) == sum(credits)`).
-- **Open Question:** Should initial customer account creation allow an opening deposit in the same transaction, or always start at `0.00` followed by a Staff Cash Deposit?
+### `RISK-07` — Scope Creep vs. 3-Student Academic Deadline (`PROJECT RISK`)
+- **Area:** Planning (`S`, `P`, `R`)
+- **Risk:** Adding premature abstractions, duplicate DTOs, or optional P2 features before P0 (`F-P0-01`–`F-P0-17`) is tested threatens UCS553 delivery.
+- **Mitigation:** Strictly enforce [../AGENTS.md](../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration) and complete P0 before P1/P2.
 
-### `RISK-05` — Account Lifecycle & State Transition Rules (`OPEN DESIGN QUESTION`)
-- **Area:** Domain Model (`S` & `P`)
-- **Question:** What exact lifecycle states (`PENDING`, `ACTIVE`, `FROZEN`, `CLOSED`) should an account support, and which operations are permitted in each state?
-- **Key Edge Cases to Decide in M1:**
-  - Can a `FROZEN` account receive incoming transfers, or must both incoming and outgoing movements be blocked?
-  - Can an account with a non-zero balance be marked `CLOSED`?
-  - Can Bank Staff freeze directly, or only request a freeze for Admin approval (P1 maker-checker)?
-
-### `RISK-06` — Audit Logging Completeness & Atomicity (`DESIGN RISK`)
-- **Area:** Security & Persistence (`S` & `P`)
-- **Question:** Should database audit records commit inside the same JDBC transaction as the audited operation, or separately so failed/denied attempts are also logged?
-- **Trade-off:** Same-transaction audit ensures committed actions always have an audit row, whereas rolled-back attempts (e.g., repeated unauthorized access or insufficient funds) would also vanish unless logged via an independent mechanism or `java.util.logging`.
-
-### `RISK-07` — Scope Management & Academic Timeline (`PROJECT RISK`)
-- **Area:** Project Planning (All Members)
-- **Risk:** Over-committing to optional P2 features (disputes, risk scoring, idempotency keys, multiple account sub-types) before P0 core banking flows are tested and UI-integrated could jeopardize UCS553 submission readiness.
-- **Mitigation:** Enforce strict milestone gating (`M0` -> `M1` -> `M2` -> `M3` P0 baseline before P1/P2 expansion).
-
-### `RISK-08` — Regulatory Applicability & Overclaiming Risk (`COMPLIANCE BOUNDARY RISK`)
-- **Area:** Research & Documentation (All Members)
-- **Risk:** Citing unverified RBI circulars or implying the project satisfies real Indian banking regulations would compromise academic integrity.
-- **Mitigation:** Keep [../docs/research/REGULATORY_TRACEABILITY.md](../docs/research/REGULATORY_TRACEABILITY.md) explicitly marked pending Gemini Deep Research verification and state clearly that this is an educational simulation.
-
-### `RISK-09` — Cross-Team Integration & Contract Drift (`COLLABORATION RISK`)
-- **Area:** Team Coordination (`S`, `P`, `R`)
-- **Risk:** Parallel work on separate branches can cause DTO field mismatches between `R` (JavaFX) and `S` (Service), or DAO exception/model mismatches between `P` and `S`.
-- **Mitigation:** Freeze shared `model/`, `dto/`, `service/`, and `dao/` interface contracts in M1, allow `R` to build against agreed DTO contracts/mock providers, and require cross-review PRs for any contract edit.
+### `RISK-08` — Pending External Gemini Deep Research (`COMPLIANCE BOUNDARY RISK`)
+- **Area:** Research & Documentation
+- **Context:** External Gemini Deep Research output has not yet been received/reviewed.
+- **Mitigation:** Preserve [../docs/research/RESEARCH_FINDINGS.md](../docs/research/RESEARCH_FINDINGS.md) and [../docs/research/REGULATORY_TRACEABILITY.md](../docs/research/REGULATORY_TRACEABILITY.md) as pending placeholders; make zero RBI compliance or regulatory claims.
