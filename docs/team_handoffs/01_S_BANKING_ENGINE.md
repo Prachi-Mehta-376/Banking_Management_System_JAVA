@@ -15,9 +15,9 @@ The **Banking Engine, Security & Integration** module enforces all financial inv
 ## 2. Responsibilities & M1 / M2 Deliverables
 
 ### M1 Deliverables (Current Milestone — Documentation Only)
-- Define and review domain models (`User`, `BankAccount`, `BankOperation`, `BankTransaction`, `AuditEvent`, `Money`, `Role`, `AccountStatus`, `OperationType`) and service DTOs ([../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md)).
-- Define `INV-01` through `INV-12` and transaction orchestration rules ([../architecture/SYSTEM_ARCHITECTURE.md](../architecture/SYSTEM_ARCHITECTURE.md), [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md)).
-- Co-review `TransactionExecutor` / `BankingUnitOfWork` boundaries with **P** and UI-facing DTOs with **R**.
+- Define and review domain models (`User`, `BankAccount`, `BankOperation`, `BankTransaction`, `AuditEvent`, `Money`, `Role`, `AccountStatus`, `OperationType`) and presentation DTOs ([../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md)).
+- Finalize `INV-01`–`INV-12`, P0 signatures (without client `idempotencyKey`), `ADMIN` read-only `StaffService` oversight, same-transaction `audit_events` rules, and `CommitOutcomeUncertainException` semantics ([../architecture/SYSTEM_ARCHITECTURE.md](../architecture/SYSTEM_ARCHITECTURE.md), [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md)).
+- Co-review `TransactionExecutor` / `BankingUnitOfWork` and `AccountDao.createAccount` (`AC000001`) with **P**, and DTO/error contracts with **R**.
 
 ### M2 Implementation Tasks (After M1 Sign-Off)
 - Implement `Money` (`long` paise + `BigDecimal` boundary parser, overflow checks) and domain entities/enums (`model/`).
@@ -52,9 +52,9 @@ The **Banking Engine, Security & Integration** module enforces all financial inv
 
 ---
 
-## 5. Expected Interfaces (Provisional — Pending M1 Freeze)
+## 5. Expected Interfaces (Frozen M1 Contracts — Awaiting PR #1 Approval)
 
-- **Exposed to R:** `AuthService`, `CustomerBankingService`, `TellerService`, `StaffService`, `AdminService`, and P1 `ReconciliationService` / `AccountControlService` documented in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+- **Exposed to R:** `AuthService`, `CustomerBankingService`, `TellerService`, `StaffService` (`STAFF` + read-only `ADMIN`), `AdminService`, and P1 `ReconciliationService` / `AccountControlService` documented in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
 - **Consumed from P:** `TransactionExecutor` + DAO interfaces via `BankingUnitOfWork`.
 
 ---
@@ -63,6 +63,7 @@ The **Banking Engine, Security & Integration** module enforces all financial inv
 
 - **No UI Coupling:** Never import `javafx.*` inside `service/`, `security/`, `model/`, or `dto/`.
 - **No Raw SQL in Services:** Never embed SQL queries, `DriverManager`, or `ResultSet` code in `service/`; execute all writes via `TransactionExecutor` and DAO interfaces.
+- **No Automatic Financial Retries:** Propagate `CommitOutcomeUncertainException` safely so UI never duplicates an uncertain operation.
 - **Simple, Idiomatic Java:** Follow the student-level engineering and strict comment guidelines in [../../AGENTS.md](../../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration).
 
 ---

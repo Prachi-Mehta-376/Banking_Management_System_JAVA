@@ -23,7 +23,7 @@ This specification defines the functional and non-functional requirements for th
 
 ### 2.2 Account Enquiry, Staff Search & Cash Operations (`FR-ACCT` / `FR-STAFF`)
 - `FR-ACCT-01` (**P0**): Customers must be able to view their own account number, status (`ACTIVE`/`FROZEN`), and exact balance formatted from integer paise (`INV-06`).
-- `FR-STAFF-01` (**P0**): Authenticated `STAFF` users must be able to search fictitious customers/accounts by name, email, or account number and view authorized account summaries and transaction history.
+- `FR-STAFF-01` (**P0**): Authenticated `STAFF` users (and `ADMIN` read-only for administrative oversight per Decision C) must be able to search fictitious customers/accounts by name, email, or account number and view authorized account summaries and transaction history.
 - `FR-STAFF-02` (**P0**): `STAFF` must be able to execute simulated cash deposits into an `ACTIVE` customer account, creating 1 `operations` row and 1 positive `transactions` row atomically.
 - `FR-STAFF-03` (**P0**): `STAFF` must be able to execute simulated cash withdrawals from an `ACTIVE` customer account after verifying sufficient balance (`INV-01`), creating 1 `operations` row and 1 negative `transactions` row atomically.
 - `FR-ACCT-02` (**P2 — Optional**): Multiple account types (e.g., Savings/Current) pending research and timeline review.
@@ -32,7 +32,7 @@ This specification defines the functional and non-functional requirements for th
 - `FR-TXN-01` (**P0**): Customers must be able to transfer simulated money from their own `ACTIVE` account to another customer's `ACTIVE` account (`source != destination`).
 - `FR-TXN-02` (**P0**): All financial operations must parse monetary input via `BigDecimal`, convert strictly to positive integer paise, and reject `<= 0`, scale `> 2`, and `long` overflow (`INV-02`, `INV-12`).
 - `FR-TXN-03` (**P0**): Internal transfers must create 1 `TRANSFER` row in `operations` and 2 `transactions` rows whose deltas sum to `0` (`INV-04`), committed atomically (`INV-03`).
-- `FR-TXN-04` (**P0**): Customers and Staff must be able to inspect chronological (newest-first) account transaction history.
+- `FR-TXN-04` (**P0**): Customers (own account), Staff, and Administrators (read-only oversight) must be able to inspect chronological (newest-first) account transaction history.
 - `FR-TXN-05` (**P1**): Persistent idempotency protection via `operations.idempotency_key` to prevent duplicate execution on retries.
 
 ### 2.4 Governance, Audit & Controls (`FR-GOV`)

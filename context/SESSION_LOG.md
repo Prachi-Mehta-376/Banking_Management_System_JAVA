@@ -85,3 +85,26 @@
   - External Gemini Deep Research output still `PENDING REVIEW`.
 - **Next Actions:**
   - Teammates (`S`, `P`, `R`) review M1 PR, resolve open M1 items (`RISK-09`: account number format, P0 `idempotencyKey` parameter signature, admin search scope), and approve ADRs before opening M2 implementation branches.
+
+---
+
+## Session 3 — 2026-11-17 (M1 Finalization — Contract Freeze & Decision Resolution A–F)
+- **Contributor:** AI Architecture Session (M1 Finalization Pass)
+- **Branch:** `docs/m1-architecture-contracts` (updating PR #1)
+- **Commit:** Pending final M1 verification & commit on `docs/m1-architecture-contracts`
+- **Objective:** Resolve remaining M1 contract items (Decisions A–F), eliminate inconsistencies across DB/transaction/service/permission/handoff docs, freeze `S ↔ P` and `S ↔ R` contracts, update ADRs (`RECOMMENDED — AWAITING APPROVAL`), and check PR #1 merge readiness without writing any code.
+- **Work Completed:**
+  - Applied Decisions A–F across `DATABASE_DESIGN.md`, `TRANSACTION_MODEL.md`, `SERVICE_CONTRACTS.md`, and `ROLE_PERMISSIONS.md` (`AC000001` atomic assignment, P0 without client `idempotencyKey`, `ADMIN` read-only search access, same-transaction `audit_events` + `java.util.logging` failures, `CommitOutcomeUncertainException` handling, and atomic first-run `ADMIN` bootstrap).
+  - Synchronized `REQUIREMENTS.md`, `FEATURE_MATRIX.md`, `TEST_PLAN.md`, and teammate handoffs (`01_S`, `02_P`, `03_R`).
+  - Updated `ADR-001`–`ADR-008` (`RECOMMENDED — AWAITING APPROVAL`), `KNOWN_ISSUES.md`, `CURRENT_STATUS.md`, and `SESSION_HANDOFF.md`.
+- **Verification Performed:**
+  - Verified repository file inventory (`51` total files: `25` `.md`, `25` `.gitkeep`, `1` `.gitignore`; zero Java, SQL, Maven, FXML, or CSS files).
+  - Validated all `165` relative Markdown links (`broken=0`) and passed privacy/professionalism scan (`0` matches).
+  - Passed `git diff --cached --check` cleanly before commit on `docs/m1-architecture-contracts`.
+- **Decisions:**
+  - All 8 ADRs technically resolved (`RECOMMENDED — AWAITING APPROVAL`) pending human sign-off on PR #1.
+- **Blockers:**
+  - Formal PR #1 approval from teammates (`S`, `P`, `R`) before merging to `main` and starting M2.
+  - External Gemini Deep Research remains `PENDING REVIEW`.
+- **Next Actions:**
+  - Team reviews and approves PR #1; once merged, begin M2 with `feature/project-foundation` (`pom.xml` + shared `model`/`dto`/`exception`).

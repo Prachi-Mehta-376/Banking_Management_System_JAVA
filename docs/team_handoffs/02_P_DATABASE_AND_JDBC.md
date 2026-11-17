@@ -15,9 +15,9 @@ The **Database, JDBC & Reliability** module delivers durable, constraint-enforce
 ## 2. Responsibilities & M1 / M2 Deliverables
 
 ### M1 Deliverables (Current Milestone — Documentation Only)
-- Specify the 5-table relational schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`) plus optional P1 `account_action_requests` in [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md).
-- Define connection pragmas (`PRAGMA foreign_keys = ON`, `busy_timeout`, write-lock behavior), indexes, `ON DELETE RESTRICT` rules, and ISO-8601 UTC timestamps.
-- Co-define `TransactionExecutor`, `TransactionWork<T>`, `BankingUnitOfWork`, and DAO interface signatures with **S**.
+- Specify the 5-table relational schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`) plus optional P1 extensions (`account_action_requests`, `operations.idempotency_key`) in [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md).
+- Define connection pragmas (`PRAGMA foreign_keys = ON`, `busy_timeout`, write-lock behavior), indexes, `ON DELETE RESTRICT` rules, atomic `AC000001` generation, and ISO-8601 UTC timestamps.
+- Finalize `TransactionExecutor`, `TransactionWork<T>`, `BankingUnitOfWork`, and DAO signatures with **S**.
 
 ### M2 Implementation Tasks (After M1 Sign-Off)
 - Author SQLite schema initialization script under `src/main/resources/db/` (M2; not created in M1).
@@ -48,9 +48,9 @@ The **Database, JDBC & Reliability** module delivers durable, constraint-enforce
 
 ---
 
-## 5. Expected Interfaces (Provisional — Pending M1 Freeze)
+## 5. Expected Interfaces (Frozen M1 Contracts — Awaiting PR #1 Approval)
 
-- **Exposed to S:** `TransactionExecutor`, `TransactionWork<T>`, `BankingUnitOfWork`, and the 5 core DAOs (plus P1 `AccountActionRequestDao`) specified in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+- **Exposed to S:** `TransactionExecutor` (throwing `CommitOutcomeUncertainException` on commit failure), `TransactionWork<T>`, `BankingUnitOfWork`, and the 5 core DAOs (plus P1 `AccountActionRequestDao`) specified in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
 - **Consumed from S:** Domain models (`model/`), wrapped persistence exceptions (`exception/`), and integer-paise monetary conventions (`ADR-003`).
 
 ---
@@ -106,5 +106,5 @@ The **Database, JDBC & Reliability** module delivers durable, constraint-enforce
 ## 12. Resume Instructions
 
 1. Read [../../AGENTS.md](../../AGENTS.md), [../../context/CURRENT_STATUS.md](../../context/CURRENT_STATUS.md), and [../../context/DECISIONS.md](../../context/DECISIONS.md).
-2. Review [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md) and [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md) with **S**, confirming account number format and `TransactionExecutor` signatures.
-3. Once M1 is approved, open branch `feature/database-jdbc` for M2 schema and DAO implementation.
+2. Review [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md) and [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md) with **S** (`AC000001` atomic assignment and `TransactionExecutor` signatures are finalized in PR #1).
+3. Once M1 PR #1 is approved and merged, open branch `feature/database-jdbc` for M2 schema and DAO implementation.

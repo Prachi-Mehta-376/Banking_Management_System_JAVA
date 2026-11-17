@@ -15,8 +15,8 @@ The **JavaFX Presentation & User Experience** module delivers a clean, cohesive 
 ## 2. Responsibilities & M1 / M2 Deliverables
 
 ### M1 Deliverables (Current Milestone — Documentation Only)
-- Review presentation-facing DTOs (`UserSession`, `AccountSummary`, `TransactionReceipt`, `TransactionView`, `CustomerSearchResult`, `AdministrativeSummary`, plus P1 DTOs) and service contracts in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
-- Confirm all UI inputs/outputs needed for Customer, Staff, and Admin workflows and planned demo walkthroughs ([../testing/DEMO_SCENARIOS.md](../testing/DEMO_SCENARIOS.md)).
+- Review presentation-facing DTOs (`UserSession`, `AccountSummary`, `TransactionReceipt`, `TransactionView`, `CustomerSearchResult`, `StaffUserSummary`, `AdministrativeSummary`, plus P1 DTOs) and service contracts in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+- Confirm all UI inputs/outputs needed for Customer, Staff, and Admin workflows (including read-only customer lookup for Admin and clear `CommitOutcomeUncertainException` warning copy) and planned demo walkthroughs ([../testing/DEMO_SCENARIOS.md](../testing/DEMO_SCENARIOS.md)).
 
 ### M2 / M3 Implementation Tasks (After M1 Sign-Off)
 - Build shared shell, role navigation header/sidebar, logout bar, and alert/error banners (`ui/common/`).
@@ -52,10 +52,10 @@ The **JavaFX Presentation & User Experience** module delivers a clean, cohesive 
 
 ---
 
-## 5. Expected Interfaces (Provisional — Pending M1 Freeze)
+## 5. Expected Interfaces (Frozen M1 Contracts — Awaiting PR #1 Approval)
 
-- **Consumed from S:** `AuthService`, `CustomerBankingService`, `TellerService`, `StaffService`, `AdminService`, and P1 `ReconciliationService` / `AccountControlService` ([../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md)).
-- **Consumed Exceptions:** Typed domain/validation/auth exceptions translated cleanly into UI feedback messages.
+- **Consumed from S:** `AuthService`, `CustomerBankingService`, `TellerService`, `StaffService` (`STAFF` + read-only `ADMIN`), `AdminService`, and P1 `ReconciliationService` / `AccountControlService` ([../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md)).
+- **Consumed Exceptions:** Typed domain/validation/auth exceptions (including `CommitOutcomeUncertainException`) translated cleanly into UI feedback messages without automatic retry loops.
 
 ---
 

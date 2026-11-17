@@ -25,7 +25,7 @@ During M1 reconciliation, one potential hidden dependency was identified and exp
 | `F-P0-04` | Service-layer three-role authorization & ownership guards | System | `S` | `SecurityContext`, `ROLE_PERMISSIONS.md` | `NOT STARTED` |
 | `F-P0-05` | Administrator staff provisioning & activation/deactivation | Administrator | `S` + `P` + `R` | `AdminService`, `UserDao`, `AuditEventDao` | `NOT STARTED` |
 | `F-P0-06` | Administrative dashboard summary metrics | Administrator | `S` + `P` + `R` | `AdminService.getAdministrativeSummary` | `NOT STARTED` |
-| `F-P0-07` | Staff customer & account search | Bank Staff | `S` + `P` + `R` | `StaffService`, `UserDao`/`AccountDao` | `NOT STARTED` |
+| `F-P0-07` | Customer & account search (`STAFF` + read-only `ADMIN`) | Bank Staff, Administrator (Read-Only) | `S` + `P` + `R` | `StaffService`, `UserDao`/`AccountDao` | `NOT STARTED` |
 | `F-P0-08` | Staff-operated simulated cash deposit | Bank Staff | `S` + `P` + `R` | `TellerService`, `TransactionExecutor`, `OperationDao`, `TransactionDao` | `NOT STARTED` |
 | `F-P0-09` | Staff-operated simulated cash withdrawal | Bank Staff | `S` + `P` + `R` | `TellerService`, conditional SQL debit, `INV-01` | `NOT STARTED` |
 | `F-P0-10` | Customer balance enquiry (own single account) | Customer | `S` + `P` + `R` | `CustomerBankingService`, session `userId` guard | `NOT STARTED` |
