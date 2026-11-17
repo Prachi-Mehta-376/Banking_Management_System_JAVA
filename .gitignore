@@ -1,0 +1,76 @@
+# ==============================================================================
+# Banking Management System (UCS553) — .gitignore
+# ==============================================================================
+
+# --- Maven & Java Build Output ---
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.mvn/timing.properties
+dependency-reduced-pom.xml
+
+# --- IDEs & Editors ---
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# --- SQLite Runtime Databases & Lock/Journal Files ---
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+data/*
+!data/.gitkeep
+
+# --- Application Logs & Generated Exports ---
+*.log
+*.log.*
+logs/
+exports/
+statements/
+*.csv
+*.pdf
+
+# --- Environment & Secrets ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- OS-Generated Junk ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Desktop.ini
+
+# --- Preserve Placeholder Files ---
+!**/.gitkeep
