@@ -2,7 +2,7 @@
 
 This file governs all AI coding assistants and engineering sessions working in the **Banking Management System (UCS553 — Enterprise Web Application)** repository.
 
-> **Current Phase Notice:** This repository is in its **M0 Documentation & Architectural Scaffolding** phase. Verify `context/CURRENT_STATUS.md` and actual repository contents before assuming any code, schema, build file, or test exists.
+> **Current Phase Notice:** This repository is in **M1 — Architecture v2.0 & Contract Specification (Awaiting Team Review; Implementation Not Started)**. Verify `context/CURRENT_STATUS.md` and actual repository contents before assuming any code, schema, build file, or test exists.
 
 ---
 
@@ -32,7 +32,7 @@ All future sessions must obey these 18 rules:
 5. **Preserve presentation/service/DAO boundaries:** Maintain strict one-way layering (`ui` -> `service` -> `dao` -> `db`). JavaFX classes (`com.tiet.banking.ui.*`) must never import `dao.*`, `db.*`, or `java.sql.*`.
 6. **Keep financial operations inside authorized transaction paths:** Never implement deposits, withdrawals, transfers, or balance mutations outside the business service layer and approved database transaction boundaries.
 7. **Preserve authorization and customer-account ownership restrictions:** Role checks (`Customer`, `Bank Staff`, `Administrator`) and customer ownership rules must be enforced at the service boundary—never rely solely on UI visibility.
-8. **Never use floating-point storage or arithmetic for money:** Never use `float` or `double` for monetary balances or transaction amounts. Follow the approved fixed-precision strategy (`BigDecimal` in Java and exact integer minor units / fixed decimal storage in SQLite per `ADR-003` once accepted).
+8. **Never use floating-point storage or arithmetic for money:** Never use `float` or `double` for monetary balances or transaction amounts. Follow the proposed fixed-precision strategy (`long` integer paise internally and in SQLite, `BigDecimal` parsing/validation at boundaries per `ADR-003` once accepted).
 9. **Use parameterized SQL statements:** When JDBC implementation begins, always use `PreparedStatement` with bound parameters. Never concatenate user input into SQL strings.
 10. **Use only synthetic customer data:** All sample customers, accounts, credentials, and funds must be purely fictional and simulated. Never insert real PII or real financial records.
 11. **Avoid unsupported regulatory or security claims:** Do not claim full RBI compliance, legal certification, PCI-DSS compliance, or production-grade banking security. Document simulation boundaries honestly in [docs/research/REGULATORY_TRACEABILITY.md](docs/research/REGULATORY_TRACEABILITY.md).
@@ -83,3 +83,14 @@ When resolving ambiguity or contradictions across files, follow this strict hier
 - **Contract Changes:** Any PR that modifies shared DTOs, service boundaries, DAO contracts, or database schema must document the change in the corresponding `docs/architecture/` file and `context/DECISIONS.md`.
 - **Verification Before Merge:** Every PR into `main` must include reproducible verification notes (compilation, tests run, manual checks performed) matching the actual state of the branch.
 - **Workspace Hygiene:** Never create nested Git repositories inside the workspace, never alter remote ownership/permissions without authorization, and never commit runtime `.db` files, logs, or IDE config clutter.
+
+---
+
+## 5. Student-Level Engineering, Code Quality & Practical Collaboration
+
+This is a third-year undergraduate Java mini-project (`UCS553`). **Optimize for the simplest correct, explainable implementation rather than maximum architectural complexity.**
+
+- **Coding Philosophy:** Write clean, idiomatic Java 17 aligned with the syllabus. Follow standard naming (`PascalCase` classes, `camelCase` methods/variables, `UPPER_SNAKE_CASE` constants, `lowercase` packages). Keep classes and methods focused, avoid boilerplate, and skip defensive checks for already-guaranteed impossible states.
+- **Strict Comment Policy:** Do **not** add obvious comments, getter/setter Javadoc, decorative banners, or AI-addressed notes. Prefer a clear 15-line method with zero comments over 20 lines of commentary. Add comments only for non-obvious financial rules, JDBC transaction semantics, concurrency/consistency constraints, security decisions, complex calculations, workarounds, or non-obvious public APIs.
+- **Avoid Overengineering:** Do not introduce unnecessary factories, builders, generic frameworks, trivial single-use interfaces, DI containers, event buses, reflection layers, or extra wrapper DTOs. Keep the agreed `JavaFX -> Service -> DAO -> SQLite` layers and `TransactionExecutor` atomicity without adding layers just to look enterprise-heavy.
+- **Practical 3-Person Collaboration (`S`, `P`, `R`):** Primary ownership enables parallel delivery and does not require every teammate to master every line of every module before contributing. AI assistants may accelerate repetitive scaffolding and debugging via stable contracts, while critical financial, security, and JDBC transaction logic must always be verified regardless of who authored it.

@@ -1,71 +1,111 @@
-# Financial Transaction Model (`TRANSACTION_MODEL.md`)
+# Financial & Transaction Management Model (`TRANSACTION_MODEL.md`)
 
-> **Status:** `PROPOSED SPECIFICATION — PENDING M1 APPROVAL`
-> **Related Decisions:** `ADR-003` (Money), `ADR-004` (Atomic Transactions), `ADR-007` (Immutable Ledger).
-
----
-
-## 1. Core Financial Invariants
-
-1. **No Floating-Point Drift:** All amounts are processed with exact decimal precision (`BigDecimal` scale 2 in Java; proposed `INTEGER` minor units `paise` in SQLite).
-2. **Strict Positive Amounts:** Every deposit, withdrawal, and transfer amount must be strictly greater than zero (`amount > 0`).
-3. **Non-Negative Account Balances:** Simulated accounts do not support overdrafts in the baseline (`balance >= 0`, enforced in both business logic and SQLite `CHECK` constraints).
-4. **Conservation of Simulated Funds on Transfers:** An internal transfer changes the sum of source and destination balances by **zero** (`debit == credit`). Only **Staff Cash Deposit** creates simulated balance in the system, and only **Staff Cash Withdrawal** removes simulated balance.
-5. **Atomicity (All-or-Nothing):** Every balance-changing operation executes inside a single explicit JDBC transaction (`autoCommit = false`). Either all balance updates, ledger entries, and transactional audit entries commit together, or everything rolls back.
-6. **Immutable Ledger:** Once committed, transaction records cannot be modified or deleted. Corrections or reversals require new compensating entries.
+> **Version:** M1 v2.0 Specification (`PROPOSED — AWAITING TEAM REVIEW`)
+> **Related Decisions:** `ADR-003` (Integer Paise), `ADR-004` (`TransactionExecutor`), `ADR-007` (Balance-Plus-Journal).
+> **Note:** Defines design contracts and target invariants (`INV-01`–`INV-12`) without executable Java/SQL code.
 
 ---
 
-## 2. Conceptual Execution Flows (Proposed)
+## 1. Monetary Representation (`ADR-003`)
 
-### 2.1 Simulated Cash Deposit (Role: `Bank Staff`)
-1. Verify authenticated principal has `STAFF` role.
-2. Validate `amount > 0` and non-empty operation note.
-3. Begin JDBC transaction (`setAutoCommit(false)`).
-4. Load target account; verify account exists and status is `ACTIVE`.
-5. Credit target account balance (`balance + amount`).
-6. Insert immutable `CASH_DEPOSIT` transaction record.
-7. Insert audit log record (`P1`).
-8. Commit JDBC transaction (or rollback on any failure).
-
-### 2.2 Simulated Cash Withdrawal (Role: `Bank Staff`)
-1. Verify authenticated principal has `STAFF` role.
-2. Validate `amount > 0`.
-3. Begin JDBC transaction.
-4. Load target account; verify account exists and status is `ACTIVE`.
-5. Verify `account.balance >= amount`; reject with domain exception (`InsufficientFundsException` concept) if insufficient.
-6. Debit target account balance (`balance - amount`).
-7. Insert immutable `CASH_WITHDRAWAL` transaction record.
-8. Insert audit log record (`P1`).
-9. Commit JDBC transaction (or rollback on any failure).
-
-### 2.3 Internal Account-to-Account Transfer (Role: `Customer`)
-1. Verify authenticated principal has `CUSTOMER` role.
-2. Validate `amount > 0` and `sourceAccountNumber != destinationAccountNumber`.
-3. Begin JDBC transaction.
-4. Load source account; verify it exists, **belongs to the authenticated customer**, and status is `ACTIVE`.
-5. Load destination account; verify it exists and status is `ACTIVE`.
-6. Verify `source.balance >= amount`.
-7. Debit source account (`source.balance - amount`).
-8. Credit destination account (`destination.balance + amount`).
-9. Insert immutable `INTERNAL_TRANSFER` transaction record linking source and destination.
-10. Insert audit log record (`P1`).
-11. Commit JDBC transaction; if **any** step fails (including DB constraint error or exception after step 7), execute `rollback()` so source balance remains untouched.
+- **Persisted & Internal Unit:** All monetary balances and transaction deltas are stored and calculated as **64-bit signed integer paise** (`long` in Java, `INTEGER` in SQLite; `₹1.00 = 100 paise`).
+- **Boundary Parsing:** User-entered amounts are parsed using `java.math.BigDecimal` (wrapped in a `Money` value class), rejecting:
+  - `null`, blank, or non-numeric strings
+  - Negative or zero values (`<= 0`) for financial operations (`INV-02`)
+  - More than 2 decimal places (`scale() > 2`)
+  - Values exceeding `long` paise range (`ArithmeticException` -> validation error)
+- **Arithmetic Safety:** Balance calculations use `Math.addExact` / `Math.subtractExact` (`INV-12`), never `float` or `double`.
 
 ---
 
-## 3. Account State Eligibility Rules (Open Question `RISK-05`)
+## 2. Balance-Plus-Transaction-Journal Model (`ADR-007`)
 
-| Account Status | Cash Deposit | Cash Withdrawal | Outgoing Transfer | Incoming Transfer | Notes |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| `ACTIVE` | Allowed | Allowed | Allowed | Allowed | Normal operating state |
-| `FROZEN` | **Denied** (Proposed) | **Denied** | **Denied** | **Denied** (Confirm M1) | Awaiting Admin unfreeze |
-| `CLOSED` | **Denied** | **Denied** | **Denied** | **Denied** | Terminal state |
-| `PENDING` (If used) | **Denied** | **Denied** | **Denied** | **Denied** | Before activation |
+Every successful financial operation atomically creates:
+1. **One** `operations` row (`reference_id`, `operation_type`, `performed_by`, `created_at`).
+2. **One or more** signed `transactions` rows (`operation_id`, `account_id`, `delta_paise`, `balance_after_paise`, `created_at`).
+3. **Atomic updates** to `accounts.balance_paise` for every affected account.
+
+### Operation Examples
+- **Simulated Cash Deposit ₹500 (`50000` paise):**
+  - `1` row in `operations` (`operation_type = 'DEPOSIT'`, `performed_by = staffUserId`)
+  - `1` row in `transactions` (`delta_paise = +50000`, `balance_after_paise = newBalance`)
+  - Target account `balance_paise` incremented by `50000`
+- **Simulated Cash Withdrawal ₹200 (`20000` paise):**
+  - `1` row in `operations` (`operation_type = 'WITHDRAWAL'`, `performed_by = staffUserId`)
+  - `1` row in `transactions` (`delta_paise = -20000`, `balance_after_paise = newBalance`)
+  - Target account `balance_paise` decremented by `20000`
+- **Internal Transfer ₹1,000 (`100000` paise) from Account A to Account B:**
+  - `1` row in `operations` (`operation_type = 'TRANSFER'`, `performed_by = customerAUserId`)
+  - `2` rows in `transactions` sharing the same `operation_id`:
+    - Account A entry: `delta_paise = -100000`
+    - Account B entry: `delta_paise = +100000`
+  - Account A decremented by `100000` and Account B incremented by `100000` in the same transaction
+  - Transfer conservation invariant (`INV-04`): `sum(delta_paise for operation) = 0`
+
+> **Scope Honesty Note:** This is a **balance-plus-transaction-journal** model, **not** a full bank-wide double-entry general ledger. Simulated cash deposits and withdrawals act as simplified external inflows and outflows without modeling vault cash or reserve contra accounts.
 
 ---
 
-## 4. P2 Extensions Pending Research Review
+## 3. Reconciliation Model (Planned P1)
 
-- **Idempotency / Duplicate-Request Prevention:** Client-generated request token checked against recent transactions to prevent accidental double-clicks or repeated submissions.
-- **Explainable Fraud-Risk Alerts:** Deterministic, inspectable threshold/velocity checks (e.g., high-value single transfer warning or rapid burst flag) surfaced cleanly for staff/admin review—not opaque ML scoring.
+Because all v1 customer accounts initialize with `balance_paise = 0`, expected balance derives purely from committed journal entries:
+
+```text
+expected_balance_paise = SUM(transactions.delta_paise WHERE account_id = ?)
+```
+
+`ReconciliationService` (P1) compares `expected_balance_paise` against `accounts.balance_paise`:
+- If they match: report account as reconciled.
+- If they differ: **report the mismatch** with stored balance, expected balance, and delta discrepancy; **never** silently overwrite `accounts.balance_paise` (`INV-11`), preserving full data for investigation.
+- **Limitation:** Because SQLite is a local desktop file, external manual inspection or modification by an OS user with filesystem access cannot be cryptographically prevented (`RISK-03`).
+
+---
+
+## 4. Transaction Management Contract (`ADR-004`)
+
+### 4.1 Core Abstractions & Ownership Split
+- **Abstractions (`com.tiet.banking.db`):**
+  - `TransactionExecutor` — Executes a unit of work atomically and manages connection/transaction boundaries.
+  - `TransactionWork<T>` — Functional callback receiving a `BankingUnitOfWork` and returning result `T`.
+  - `BankingUnitOfWork` — Scopes DAO access (or binds the single active JDBC `Connection`) so every DAO called inside the work callback runs on the **exact same `Connection`**.
+
+| Responsibility | Owner | Scope |
+| :--- | :---: | :--- |
+| Connection creation, `PRAGMA foreign_keys = ON`, `BEGIN IMMEDIATE` / `setAutoCommit(false)`, `commit()`, `rollback()`, `close()`, `SQLITE_BUSY` handling | **P** | `db/` & `dao/jdbc/` |
+| Authentication, RBAC checks, `Money` validation, business rules, orchestration, journal entry construction, custom exceptions | **S** | `service/` & `security/` |
+
+### 4.2 Why All Participating DAOs Must Share One Connection
+In SQLite + JDBC, a transaction is strictly scoped to a single `java.sql.Connection`. If `AccountDao` and `TransactionDao` acquire separate connections, SQLite treats them as independent sessions—meaning:
+1. A failure in `TransactionDao` could leave `AccountDao`'s debit committed (`INV-03` violated).
+2. A second connection attempting a write while the first connection holds an uncommitted write transaction immediately hits `SQLITE_BUSY` deadlock/lock errors.
+
+### 4.3 Mandatory 9-Step Financial Execution Sequence
+1. **Authenticate & Authorize:** Service verifies active `UserSession`, required `Role`, and (for customer operations) ownership (`INV-05`, `INV-06`).
+2. **Validate Input:** Parse and validate `Money` (`> 0`, `<= 2` decimals, overflow-safe) and non-empty distinct account identifiers (`INV-02`).
+3. **Enter Database Transaction:** Invoke `TransactionExecutor.execute(...)`, which acquires one `Connection` with `PRAGMA foreign_keys = ON` and disables auto-commit (using `BEGIN IMMEDIATE` or equivalent SQLite write-lock acquisition to prevent write-upgrade deadlocks).
+4. **Re-Read Account State Inside Transaction:** Load target account(s) on the active transaction connection (for transfers, lock/read accounts in consistent ID order).
+5. **Check Status & Funds:** Verify all participating accounts have `status == ACTIVE` (`INV-07`) and, for withdrawals/transfers, `balance_paise >= amount_paise` (`INV-01`).
+6. **Safely Update Balances:** Execute atomic conditional `UPDATE`s (e.g., `WHERE id = ? AND status = 'ACTIVE' AND balance_paise >= ?` for debits; `WHERE id = ? AND status = 'ACTIVE'` for credits) with overflow checks (`INV-12`) and verify `rowsAffected == 1`.
+7. **Write Operation & Journal Records:** Insert `1` row into `operations` and `1` (deposit/withdrawal) or `2` (transfer) rows into `transactions` with accurate `balance_after_paise` (`INV-08`).
+8. **Commit:** Call `connection.commit()` **only** after every required write succeeds and `rowsAffected == 1` checks pass.
+9. **Rollback on Failure:** Catch any runtime/business/SQL exception before commit, execute `connection.rollback()`, preserve clean connection cleanup, and map persistence failures safely without exposing raw SQL internals (`INV-03`).
+
+---
+
+## 5. Reliability Edge Cases & Failure Semantics
+
+- **Affected-Row Verification:** Every conditional balance `UPDATE` must assert `executeUpdate() == 1`. If `0` rows updated (e.g., concurrent balance change or frozen status), abort and roll back immediately.
+- **SQLite Write Locks & `SQLITE_BUSY`:** SQLite permits one active writer at a time. `db/` sets a reasonable `busy_timeout` and starts write transactions cleanly (`BEGIN IMMEDIATE` where supported) so concurrent withdrawals serialize safely (`TC-12`) rather than corrupting balances.
+- **Failure Injection for Verification:** `TransactionExecutor` or service/DAO integration tests (`TC-10`, `TC-11`) can inject a controlled failure (e.g., failing callback step after debit before commit) via test stubs/hooks without embedding production backdoors.
+- **Pre-Commit vs. Uncertain Commit Outcomes & No Unsafe Retries:**
+  - If an error occurs **before** `commit()` is invoked, rollback guarantees zero committed change; the UI can safely report failure and allow user resubmission.
+  - If an error occurs **during/after** `commit()` (uncertain commit outcome), the application must **never automatically retry** a financial mutation in P0—because blindly retrying after an uncertain commit risks double-debiting or double-crediting. Persistent `idempotency_key` deduplication is planned in **P1** (`F-P1-05`).
+- **Audit Event Atomicity (`audit_events` vs. Account/Permission Mutations):**
+  - Successful privileged mutations (initial admin bootstrap, staff creation/deactivation, P1 freeze/unfreeze approval) write their `audit_events` row **inside the same JDBC transaction** (`INV-10`), ensuring state changes never commit without an actor-linked audit row.
+  - **Explicitly Documented Risk (`RISK-06`):** Because SQLite rolls back the entire transaction on failure, denied or failed attempts do not persist into `audit_events` via the rolled-back transaction; instead, rejected/unauthorized attempts are recorded through `java.util.logging` unless an independent post-rollback audit write is added in P1.
+
+---
+
+## 6. Cross-Reference to Design Invariants
+
+This transaction model directly underpins `INV-01` through `INV-04`, `INV-07` through `INV-09`, `INV-11`, and `INV-12` defined in [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md#4-financial--security-invariants-inv-01-through-inv-12).

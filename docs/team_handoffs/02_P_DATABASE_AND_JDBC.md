@@ -1,26 +1,30 @@
 # Team Handoff — Member P: Database, JDBC & Reliability (`02_P_DATABASE_AND_JDBC.md`)
 
 > **Peer Role:** Equal Module Owner (**P**) — No hierarchical team lead.
-> **Scope:** SQLite Schema, JDBC Connectivity, Transaction Infrastructure, DAO Interfaces & Implementations, Constraints & Persistence Testing.
-> **Current Status:** `NOT STARTED` (M0 Documentation & Scaffolding Phase)
+> **Scope:** SQLite Database Model, Plain JDBC Architecture, DAO Interfaces & Implementations, `TransactionExecutor`, Schema Initialization, Constraints & Persistence Testing.
+> **Current Status:** `NOT STARTED` (M1 Architecture & Contract Specification Under Review)
 
 ---
 
 ## 1. Module Purpose
 
-The **Database, JDBC & Reliability** module guarantees durable, constraint-enforced relational persistence in SQLite using **Plain JDBC** and the **DAO design pattern**. It abstracts all SQL mechanics away from business logic while guaranteeing foreign-key integrity, SQL injection protection, and reliable transaction rollback behavior.
+The **Database, JDBC & Reliability** module delivers durable, constraint-enforced SQLite persistence over **Plain JDBC** and the **DAO pattern**. It guarantees that multi-DAO financial operations share a single JDBC `Connection` via `TransactionExecutor`, enforce foreign keys and non-negative balance checks in SQL, and roll back cleanly on failure.
 
 ---
 
-## 2. Responsibilities
+## 2. Responsibilities & M1 / M2 Deliverables
 
-- Design and maintain the SQLite relational schema and initialization scripts (`src/main/resources/db/`).
-- Implement SQLite connection management, required PRAGMA execution (`foreign_keys = ON`, proposed `WAL` mode and `busy_timeout`), and clean resource closing (`db/`).
-- Provide the transaction boundary helper/coordinator (`ADR-004`, `RISK-01`) enabling **S** to run multi-DAO operations atomically (`setAutoCommit(false)`, `commit`, `rollback`).
-- Define DAO interfaces (`dao/`) and plain JDBC implementations (`dao/jdbc/`) using parameterized `PreparedStatement`s exclusively.
-- Enforce relational integrity (`PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK` constraints for non-negative balances and positive transaction amounts).
-- Map SQL exceptions cleanly to **S**'s persistence exception types without leaking raw SQL internals to the UI.
-- Co-author domain model alignment (`model/`) with **S** to ensure clean mapping between Java objects (`BigDecimal`) and SQLite storage (`paise` minor units or agreed representation).
+### M1 Deliverables (Current Milestone — Documentation Only)
+- Specify the 5-table relational schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`) plus optional P1 `account_action_requests` in [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md).
+- Define connection pragmas (`PRAGMA foreign_keys = ON`, `busy_timeout`, write-lock behavior), indexes, `ON DELETE RESTRICT` rules, and ISO-8601 UTC timestamps.
+- Co-define `TransactionExecutor`, `TransactionWork<T>`, `BankingUnitOfWork`, and DAO interface signatures with **S**.
+
+### M2 Implementation Tasks (After M1 Sign-Off)
+- Author SQLite schema initialization script under `src/main/resources/db/` (M2; not created in M1).
+- Implement connection factory, per-connection `PRAGMA foreign_keys = ON` setup, schema bootstrapper, `TransactionExecutor`, and `BankingUnitOfWork` (`db/`).
+- Implement DAO interfaces (`dao/`) and parameterized `PreparedStatement` JDBC implementations (`dao/jdbc/`) for `UserDao`, `AccountDao`, `OperationDao`, `TransactionDao`, and `AuditEventDao` (plus P1 `AccountActionRequestDao`).
+- Implement conditional atomic balance updates (`WHERE id = ? AND status = 'ACTIVE' [AND balance_paise >= ?]`) verifying `rowsAffected == 1`.
+- Author persistence, constraint, rollback, and concurrency tests under `src/test/java/com/tiet/banking/dao/`.
 
 ---
 
@@ -28,84 +32,79 @@ The **Database, JDBC & Reliability** module guarantees durable, constraint-enfor
 
 | Directory | Ownership Type | Notes |
 | :--- | :---: | :--- |
-| `src/main/java/com/tiet/banking/db/` | **Primary Owner** | Connection factory, PRAGMA setup, schema initializer, transaction helper |
-| `src/main/java/com/tiet/banking/dao/` | **Primary Owner** | Persistence interfaces (`UserDao`, `CustomerDao`, `AccountDao`, etc.) |
+| `src/main/java/com/tiet/banking/db/` | **Primary Owner** | Connection factory, `PRAGMA` setup, schema initializer, `TransactionExecutor`, `BankingUnitOfWork` |
+| `src/main/java/com/tiet/banking/dao/` | **Primary Owner** | Persistence interfaces (`UserDao`, `AccountDao`, `OperationDao`, `TransactionDao`, `AuditEventDao`) |
 | `src/main/java/com/tiet/banking/dao/jdbc/` | **Primary Owner** | Plain JDBC implementations (`PreparedStatement`, `ResultSet` mapping) |
-| `src/main/resources/db/` | **Primary Owner** | SQL schema DDL and optional synthetic seed data script (M2) |
+| `src/main/resources/db/` | **Primary Owner** | SQLite DDL script (`schema.sql` in M2) |
 | `data/` | **Primary Owner** | Runtime SQLite database location (`.gitkeep` only tracked; `.db` files gitignored) |
 | `src/main/java/com/tiet/banking/model/` | **Co-owned w/ S** | Entity alignment for clean JDBC mapping |
-| `src/test/java/com/tiet/banking/dao/` | **Primary Owner** | Automated JDBC DAO, constraint & rollback tests |
+| `src/test/java/com/tiet/banking/dao/` | **Primary Owner** | Automated JDBC DAO, constraint, rollback & concurrency tests |
 
 ---
 
 ## 4. Dependencies on Other Modules
 
-- **Depends on S (`model/`, `exception/`):** Needs finalized domain model entities/enums and wrapped persistence exception classes before DAO implementations can compile.
-- **Collaborates with S on Transaction Semantics (`RISK-01`):** Must agree with **S** on how an active JDBC `Connection` is shared across multiple DAO calls inside a single business transaction.
+- **Coordinates w/ S (`model/`, `exception/`, `service/`):** Needs agreed domain entities (`User`, `BankAccount`, `BankOperation`, `BankTransaction`, `AuditEvent`), persistence exception wrapper, and exact `TransactionExecutor` / `BankingUnitOfWork` callback contract.
 
 ---
 
 ## 5. Expected Interfaces (Provisional — Pending M1 Freeze)
 
-- **Exposed to S:**
-  - Transaction Coordinator abstraction (executes a unit of work atomically in `db/`).
-  - DAO interfaces (`UserDao`, `CustomerDao`, `AccountDao`, `TransactionDao`, and P1 `FreezeRequestDao`, `AuditLogDao`) documented conceptually in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
-- **Consumed from S:** Domain models (`model/`), persistence wrapper exceptions (`exception/`), and approved money conversion conventions (`ADR-003`).
+- **Exposed to S:** `TransactionExecutor`, `TransactionWork<T>`, `BankingUnitOfWork`, and the 5 core DAOs (plus P1 `AccountActionRequestDao`) specified in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+- **Consumed from S:** Domain models (`model/`), wrapped persistence exceptions (`exception/`), and integer-paise monetary conventions (`ADR-003`).
 
 ---
 
 ## 6. Integration Boundaries
 
-- **Strict Layer Isolation:** `dao.*`, `dao.jdbc.*`, and `db.*` must **never** import `com.tiet.banking.ui.*` or `javafx.*`, and must **never** import `com.tiet.banking.service.*` business rules.
-- **No Business Authorization in SQL DAOs:** Role permissions and customer ownership validation live in **S**'s service layer (`ADR-005`); DAOs execute explicit queries requested by services.
-- **Zero SQL Concatenation:** Every dynamic parameter must bind through `PreparedStatement` placeholders (`?`).
-- **Git Hygiene:** Runtime `.db`, `.db-wal`, `.db-shm`, and `.db-journal` files under `data/` must never be committed.
+- **Strict Layer Isolation:** `db/`, `dao/`, and `dao.jdbc/` must **never** import `service.*`, `ui.*`, or `javafx.*`.
+- **Single Shared Connection:** All DAOs invoked via `BankingUnitOfWork` inside `TransactionExecutor` must operate on the **exact same JDBC `Connection`**.
+- **No Unapproved Mutations on Journal Tables:** `OperationDao`, `TransactionDao`, and `AuditEventDao` must expose insert/query operations only—no update or delete methods (`INV-09`).
+- **Simple, Clean JDBC:** Keep SQL queries clear and concise without custom ORM reflection or unnecessary builder wrappers ([../../AGENTS.md](../../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration)).
 
 ---
 
-## 7. Initial Tasks (For M1 -> M2 Transition)
+## 7. Review Responsibilities
 
-1. Co-review `ADR-003` (integer `paise` vs. decimal text in SQLite) and `ADR-004` / `RISK-01` (transaction manager design) with **S**.
-2. Finalize relational table design, foreign keys, `CHECK` constraints, and ledger immutability rules in [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md).
-3. On branch `feature/database-jdbc` (in M2), write schema SQL (`resources/db/`), `db/` connection/transaction helpers, JDBC DAOs, and DAO test suite.
+- Cross-review **S**'s PRs on `model/` and `TransactionExecutor` service consumption to confirm financial operations verify `rowsAffected == 1` and avoid unsafe retries.
+- Verify no SQLite runtime `.db` / `-wal` / `-shm` files ever appear in commits.
 
 ---
 
 ## 8. Acceptance Criteria
 
-- Fresh SQLite initialization cleanly creates all tables, constraints, and indexes with `PRAGMA foreign_keys = ON`.
-- Database rejects negative balances, non-positive transaction amounts, duplicate usernames/account numbers, and invalid foreign keys at the SQL constraint level.
-- Multi-DAO transfer failure mid-flight cleanly rolls back all partial changes (`TC-DB-04`).
-- No floating-point (`REAL`) columns store money (`ADR-003`).
-- All DAO methods execute parameterized `PreparedStatement`s and close JDBC resources via `try-with-resources`.
+- Fresh SQLite DB initialization cleanly applies all 5 tables, `UNIQUE`, `FOREIGN KEY (ON DELETE RESTRICT)`, `CHECK` constraints, and indexes with `PRAGMA foreign_keys = ON`.
+- Conditional debits/credits reject negative balances (`INV-01`) and `FROZEN` accounts (`INV-07`) at SQL boundary.
+- Mid-transaction failure leaves zero partial writes after rollback (`TC-10`, `TC-11`).
+- Concurrent withdrawals safely serialize without producing negative balances (`TC-12`), and data persists across application restarts (`TC-14`).
 
 ---
 
 ## 9. Testing Responsibilities
 
-- **DAO & Constraint Tests (`src/test/java/com/tiet/banking/dao/`):** Test CRUD queries, constraint enforcement (`CHECK`, `FOREIGN KEY`, `UNIQUE`), connection PRAGMAs, and atomic commit/rollback against an isolated temporary SQLite test file (`TC-DB-01`..`TC-DB-05` in [../testing/TEST_PLAN.md](../testing/TEST_PLAN.md)).
-- **Integration Support:** Partner with **S** on end-to-end integration tests under `src/test/java/com/tiet/banking/integration/`.
+- **DAO & Constraint Tests (`test/.../dao/`):** Verify schema creation, foreign key restriction (`ON DELETE RESTRICT`), `CHECK` constraints, `PreparedStatement` queries, rollback on exception, and two-thread withdrawal safety against an isolated temporary SQLite file.
+- **Joint Integration Tests:** Support **S** on end-to-end integration tests under `test/.../integration/`.
 
 ---
 
 ## 10. What Is Explicitly Outside This Module's Ownership
 
-- Business validation logic (e.g., RBAC checks, password hashing, maker-checker policy enforcement — owned by **S**).
-- JavaFX layouts, controllers, dialogs, CSS styling, and UI navigation (owned by **R**).
-- Introducing Hibernate, JPA, Spring Data, or MyBatis (explicitly excluded by UCS553 scope).
+- Authentication/hashing, RBAC enforcement, `Money` input parsing, or business workflow rules (owned by **S**).
+- JavaFX screens, controllers, CSS styling, or user feedback dialogs (owned by **R**).
+- Introducing Hibernate, JPA, Spring Data, or MyBatis.
 
 ---
 
 ## 11. Current Status
 
 - **Status:** `NOT STARTED`
-- **Artifacts Existing:** Directory `.gitkeep` placeholders only (`db/`, `dao/`, `dao/jdbc/`, `resources/db/`, `data/`, `test/.../dao/`).
+- **Artifacts Existing:** Directory `.gitkeep` placeholders only; M1 schema & transaction specifications drafted on branch `docs/m1-architecture-contracts`.
 - **Schema & Tests:** `0` SQL files, `0` DAO classes, `0` executed tests.
 
 ---
 
 ## 12. Resume Instructions
 
-1. Read [../../AGENTS.md](../../AGENTS.md), [../../context/00_MASTER_PROJECT_CONTEXT.md](../../context/00_MASTER_PROJECT_CONTEXT.md), and [../../context/CURRENT_STATUS.md](../../context/CURRENT_STATUS.md).
-2. Review [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md), [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md), and [../../context/KNOWN_ISSUES.md](../../context/KNOWN_ISSUES.md) (`RISK-01`, `RISK-03`, `RISK-06`).
-3. Align with **S** on `ADR-003` and `ADR-004` during M1 before creating schema or JDBC code on branch `feature/database-jdbc`.
+1. Read [../../AGENTS.md](../../AGENTS.md), [../../context/CURRENT_STATUS.md](../../context/CURRENT_STATUS.md), and [../../context/DECISIONS.md](../../context/DECISIONS.md).
+2. Review [../architecture/DATABASE_DESIGN.md](../architecture/DATABASE_DESIGN.md) and [../architecture/TRANSACTION_MODEL.md](../architecture/TRANSACTION_MODEL.md) with **S**, confirming account number format and `TransactionExecutor` signatures.
+3. Once M1 is approved, open branch `feature/database-jdbc` for M2 schema and DAO implementation.

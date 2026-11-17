@@ -1,71 +1,55 @@
 # Project Context (`PROJECT_CONTEXT.md`)
 
-> **Focus:** Product Vision, Users, End-to-End Workflows, Scope Boundaries, Milestones, and Academic Report Alignment.
+> **Focus:** Product Vision, Users, End-to-End Workflows, Scope Boundaries, Milestones & Academic Report Link.
 > **Master Reference:** [00_MASTER_PROJECT_CONTEXT.md](00_MASTER_PROJECT_CONTEXT.md)
 
 ---
 
 ## 1. Product Vision
 
-The **Banking Management System** aims to deliver an intuitive, cohesive, and thoroughly documented desktop simulation of core retail banking operations for **UCS553 — Enterprise Web Application** at **Thapar Institute of Engineering and Technology, Patiala**.
-
-Rather than a minimal CRUD screen over a flat file, the application models real-world operational separation between customers, branch tellers/staff, and administrative oversight—demonstrating how business logic, transactional safety, authorization boundaries, and user experience fit together in Core Java.
+The **Banking Management System** is a third-year undergraduate Core Java desktop simulation for **UCS553 — Enterprise Web Application** (TIET, Patiala). It prioritizes correctness, clean separation of concerns, and student explainability over unnecessary enterprise boilerplate.
 
 ---
 
 ## 2. Intended Users & Three-Role Architecture
 
 ```text
-+-------------------+      +-------------------+      +-------------------+
-|     Customer      |      |    Bank Staff     |      |   Administrator   |
-+-------------------+      +-------------------+      +-------------------+
-| - Login           |      | - Login           |      | - Login           |
-| - View own balance|      | - Onboard customer|      | - Approve/reject  |
-| - View history    |      | - Open account    |      |   freeze/unfreeze |
-| - Transfer funds  |      | - Cash deposit /  |      | - Manage staff    |
-| - Export statement|      |   withdrawal sim  |      | - View audit logs |
-|   (proposed P1)   |      | - Request freeze  |      | - Reconcile ledger|
-+-------------------+      +-------------------+      +-------------------+
++-----------------------+      +-----------------------+      +-----------------------+
+|       Customer        |      |      Bank Staff       |      |     Administrator     |
++-----------------------+      +-----------------------+      +-----------------------+
+| - Public registration |      | - Admin-provisioned   |      | - First-run secure    |
+|   (1 account @ ₹0.00) |      |   credentials login   |      |   initial setup       |
+| - View own balance    |      | - Search customers    |      | - Provision/deactivate|
+| - View own history    |      | - Simulated cash      |      |   Staff accounts      |
+| - Transfer to active  |      |   deposit/withdrawal  |      | - View admin stats    |
+|   customer account    |      | - Inspect customer    |      | - View audits & run   |
+| - Export CSV (P1)     |      |   account & history   |      |   reconciliation (P1) |
+|                       |      | - Request freeze (P1) |      | - Review freeze (P1)  |
++-----------------------+      +-----------------------+      +-----------------------+
 ```
 
-### Role Summaries
-1. **Customer:** Self-service portal restricted strictly to accounts owned by the authenticated customer. Cannot alter account states directly or inspect other customers' data.
-2. **Bank Staff:** Branch counter operations. Registers synthetic customers, opens accounts, processes simulated cash deposits/withdrawals (the mechanism by which simulated liquidity enters/exits customer accounts), and submits freeze/unfreeze requests with reasons.
-3. **Administrator:** Governance & oversight. Does not bypass maker-checker controls to arbitrarily invent customer balances; instead manages staff credentials/status, adjudicates freeze/unfreeze requests, reviews audit trails, and verifies system balance conservation.
-
-See [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md) for the proposed role matrix.
+For full permissions, first-run bootstrap rules, and frozen-account restrictions, see [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md).
 
 ---
 
-## 3. Core Proposed User Workflows
+## 3. Core M1 Proposed User Workflows
 
-| Workflow ID | Role(s) | Summary Flow (Conceptual Proposal) | Priority |
+| Workflow | Role(s) | Summary Flow (Proposed) | Tier |
 | :--- | :--- | :--- | :---: |
-| **WF-01** | All Roles | Authenticate via login screen -> service verifies credentials & role -> JavaFX routes to role-specific dashboard. | `P0` |
-| **WF-02** | Bank Staff | Register synthetic customer profile -> create simulated account -> persist customer & account atomically -> display assigned account number. | `P0` |
-| **WF-03** | Bank Staff | Select target active account -> enter simulated cash deposit/withdrawal amount & reference -> service validates -> atomic balance update + ledger entry + audit record. | `P0` |
-| **WF-04** | Customer | View dashboard of owned accounts -> inspect balance & filterable transaction history (`TableView`). | `P0` |
-| **WF-05** | Customer | Initiate internal transfer (source owned account -> destination account, positive amount) -> service checks ownership, active status, sufficient funds -> atomic debit/credit + immutable ledger entries. | `P0` |
-| **WF-06** | Staff -> Admin | Staff submits freeze/unfreeze request with justification -> Admin reviews pending queue -> Admin approves/rejects -> account status updates + audit log recorded. | `P1` |
-| **WF-07** | Customer / Admin | Customer exports simulated account statement via Java I/O; Admin runs ledger vs. balance reconciliation check and inspects audit trail. | `P1` |
-| **WF-08** | Customer / Staff | Optional duplicate-request prevention, explainable risk alerts, dispute tracking, and account-type policy checks (pending research). | `P2` |
+| **WF-01** | First-Run Operator | On empty DB (`COUNT(ADMIN) == 0`), complete Initial Admin Setup with user-supplied password -> locked permanently afterward. | `P0` |
+| **WF-02** | Admin | Log in as `ADMIN` -> provision/deactivate `STAFF` accounts (`audit_events` logged) -> inspect `AdministrativeSummary`. | `P0` |
+| **WF-03** | Public -> Customer | Self-register as `CUSTOMER` -> creates `users` + `1` `ACTIVE` `accounts` row (`₹0.00` balance) atomically. | `P0` |
+| **WF-04** | Bank Staff | Log in -> search customers/accounts -> perform simulated cash deposit or withdrawal -> creates `operations` + `transactions` rows atomically. | `P0` |
+| **WF-05** | Customer | View single owned account balance & newest-first transaction history -> transfer simulated money to another `ACTIVE` account. | `P0` |
+| **WF-06** | Admin / Customer / Staff | P1 controls: non-destructive reconciliation, admin audit viewer, maker-checker freeze/unfreeze, CSV statement export, idempotent retries. | `P1` |
+| **WF-07** | All Roles | Optional research-dependent extensions (explainable fraud alerts, disputes, multiple account types). | `P2` |
 
 ---
 
-## 4. Functional Objectives & Project Scope
+## 4. Scope Boundaries & Explicit Exclusions
 
-### Objectives
-- Demonstrate clean OOP, layered modularity, and parallel teammate collaboration (`S`, `P`, `R`).
-- Enforce ACID properties during financial transfers so partial debits/credits can never occur.
-- Enforce service-layer authorization so security never relies exclusively on hiding JavaFX buttons.
-- Maintain traceable documentation linking requirements, ADRs, tests, and the final academic report.
-
-### Explicit Exclusions
-- No external banking network connectivity (no UPI, NEFT, IMPS, SWIFT, or card networks).
-- No real identity verification APIs (synthetic data only).
-- No web server, REST API deployment, Spring Boot, Hibernate, or JavaScript frontend.
-- No production regulatory compliance claims (e.g., RBI audit sign-off or PCI-DSS certification).
-- No multi-user distributed concurrency over a network server (local desktop SQLite simulation only).
+- **Included (v1):** Single local SQLite DB, fictitious users, 1 bank account per customer starting at `0` paise, `ACTIVE`/`FROZEN` statuses, integer-paise arithmetic, atomic `TransactionExecutor` updates, and JUnit service/DB tests.
+- **Excluded:** External payment networks (UPI/NEFT/IMPS), real KYC verification, Spring/Hibernate/web deployment, account closure in P0, and regulatory compliance claims.
 
 ---
 
@@ -73,19 +57,15 @@ See [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISS
 
 | Milestone | Scope | Exit Criteria | Current State |
 | :--- | :--- | :--- | :--- |
-| **M0 — Foundation & Context** | Repository structure, `.gitignore`, `AGENTS.md`, `README.md`, `context/`, `docs/` scaffolding | All scaffolding docs verified, zero code/forbidden artifacts, team aligned | **In Final Verification (Working Tree)** |
-| **M1 — Research & Contract Freeze** | Integrate Gemini Deep Research; approve ADRs, domain models, DTOs, service interfaces & SQLite schema | Contracts signed off by `S`, `P`, `R`; `CURRENT_STATUS` updated | `NOT STARTED` |
-| **M2 — Persistence & Banking Engine** | Maven `pom.xml`, SQLite schema/DB setup (`P`), DAO implementations (`P`), domain services & RBAC (`S`) | Unit & DAO tests executed and passing | `NOT STARTED` |
-| **M3 — JavaFX UI & Integration** | Role dashboards & screens (`R`), mock-to-service wiring (`S` + `R`), end-to-end integration tests | P0 workflows functional end-to-end | `NOT STARTED` |
-| **M4 — P1/P2 Polish & Verification** | Freeze/unfreeze maker-checker, audit viewer, statement export, reconciliation, optional P2 items | Full test plan executed & recorded honestly | `NOT STARTED` |
-| **M5 — Academic Report & Demo** | Screenshots (`docs/report/screenshots/`), demo script dry run, official UCS553 report compilation | Report & demo ready for evaluation | `NOT STARTED` |
+| **M0 — Foundation & Context** | Repository tree, `.gitignore`, `AGENTS.md`, `README.md`, `context/`, `docs/` | Verified and committed on `main` (`3929940`) | **Complete** |
+| **M1 — Architecture v2.0 & Contracts** | Financial model (`ADR-003`/`004`/`007`/`008`), 5-table DB spec, invariants, DTOs, services, test plan, student coding rules | PR reviewed and approved by `S`, `P`, `R` | **In Review (`docs/m1-architecture-contracts`)** |
+| **M2 — Core Persistence & Banking Engine** | Maven `pom.xml`, SQLite schema & `TransactionExecutor` (`P`), `Money`/Security/Services (`S`), unit & DAO tests | `TC-01`–`TC-14` implemented and passing | `NOT STARTED` |
+| **M3 — JavaFX UI & Integration** | JavaFX views & CSS (`R`), startup/navigation wiring (`S`+`R`), live SQLite integration | All P0 workflows functional end-to-end | `NOT STARTED` |
+| **M4 — P1 Controls & Verification** | Reconciliation, audit viewer, freeze/unfreeze maker-checker, CSV export, idempotency | P1 scenarios (`TC-15`–`TC-17`) verified | `NOT STARTED` |
+| **M5 — Academic Report & Viva** | UI screenshots (`docs/report/screenshots/`), demo dry run, UCS553 report | Submission-ready repository and report | `NOT STARTED` |
 
 ---
 
 ## 6. Relationship with the Official Academic Report
 
-Artifacts produced across `docs/` feed directly into the final UCS553 submission stored under `docs/report/`:
-- Architecture rationale and conceptual diagrams -> System Design section ([../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md)).
-- Requirements & feature matrix -> Software Requirements Specification section ([../docs/requirements/REQUIREMENTS.md](../docs/requirements/REQUIREMENTS.md)).
-- Research synthesis & traceability -> Literature / Domain Compliance Context section ([../docs/research/RESEARCH_FINDINGS.md](../docs/research/RESEARCH_FINDINGS.md)).
-- Test plan, execution evidence, and UI screenshots -> Testing & Results section ([../docs/testing/TEST_PLAN.md](../docs/testing/TEST_PLAN.md) and `docs/report/screenshots/`).
+Documentation in `docs/architecture/`, `docs/requirements/`, `docs/research/`, and `docs/testing/` feeds directly into `docs/report/` (including verified M5 screenshots in `docs/report/screenshots/`).

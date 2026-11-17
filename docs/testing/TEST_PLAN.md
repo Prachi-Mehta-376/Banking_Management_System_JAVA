@@ -1,57 +1,39 @@
 # Verification & Test Plan (`TEST_PLAN.md`)
 
-> **Execution Notice:** **NO APPLICATION CODE OR TESTS EXIST YET.** Every test scenario below has status **`NOT EXECUTED`**. Never mark any test as passing unless it has actually been compiled and executed against implemented code.
+> **Version:** M1 v2.0 Specification (`NOT EXECUTED`)
+> **Strict Rule:** Zero application code or tests exist yet. Every scenario below has verification status **`NOT EXECUTED`**. Never report a test as passing until compiled and run against implemented code.
 
 ---
 
-## 1. Planned Testing Pyramid & Ownership
+## 1. Planned Testing Strategy & Ownership
 
-| Layer | Planned Location | Primary Owner | Test Tooling (Planned) | Current Status |
+| Layer | Planned Location | Owner | Tooling (Planned) | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Unit / Service Tests** | `src/test/java/com/tiet/banking/service/` | `S` | JUnit 5 (with mock/stub DAOs) | `NOT IMPLEMENTED` |
-| **DAO / Persistence Tests** | `src/test/java/com/tiet/banking/dao/` | `P` | JUnit 5 + isolated temporary SQLite test DB | `NOT IMPLEMENTED` |
-| **End-to-End Integration Tests** | `src/test/java/com/tiet/banking/integration/` | `S` (w/ `P`) | JUnit 5 + real Services + real SQLite DAOs | `NOT IMPLEMENTED` |
-| **JavaFX Manual UI Verification** | [DEMO_SCENARIOS.md](DEMO_SCENARIOS.md) + `docs/report/screenshots/` | `R` (w/ `S`, `P`) | Manual checklist across 3 role dashboards | `NOT EXECUTED` |
+| **Service & Invariant Unit Tests** | `src/test/java/com/tiet/banking/service/` | `S` | JUnit 5 (stub DAOs / in-memory `TransactionExecutor`) | `NOT IMPLEMENTED` |
+| **DAO, Constraint & Concurrency Tests** | `src/test/java/com/tiet/banking/dao/` | `P` | JUnit 5 + isolated temporary SQLite test DB | `NOT IMPLEMENTED` |
+| **End-to-End Service + SQLite Tests** | `src/test/java/com/tiet/banking/integration/` | `S` + `P` | JUnit 5 + real `TransactionExecutor` + SQLite DB | `NOT IMPLEMENTED` |
+| **JavaFX Manual UI Walkthroughs** | [DEMO_SCENARIOS.md](DEMO_SCENARIOS.md) | `R` (w/ `S`, `P`) | Manual evaluation against live app | `NOT EXECUTED` |
 
 ---
 
-## 2. Proposed Test Scenarios Register (All `NOT EXECUTED`)
+## 2. M1 Planned Verification Scenarios (`TC-01` through `TC-17`)
 
-### 2.1 Authentication & RBAC Tests (`S` / Integration)
-
-| Test ID | Scenario | Expected Behavior | Status |
-| :--- | :--- | :--- | :---: |
-| `TC-AUTH-01` | Valid login for Customer, Staff, and Admin | Returns authenticated session with exact role; hashes compared securely | `NOT EXECUTED` |
-| `TC-AUTH-02` | Login with incorrect password or unknown username | Throws authentication failure; session remains unauthenticated | `NOT EXECUTED` |
-| `TC-AUTH-03` | Customer attempts Staff-only cash deposit service | Service throws authorization exception before DAO access | `NOT EXECUTED` |
-| `TC-AUTH-04` | Customer A attempts balance query or transfer from Customer B's account | Service rejects with ownership/authorization exception | `NOT EXECUTED` |
-| `TC-AUTH-05` | Staff attempts to approve their own freeze request (P1) | Rejected by service & maker-checker constraint | `NOT EXECUTED` |
-
-### 2.2 Banking Engine & Financial Validation Tests (`S` / Service)
-
-| Test ID | Scenario | Expected Behavior | Status |
-| :--- | :--- | :--- | :---: |
-| `TC-TXN-01` | Staff cash deposit with positive amount on `ACTIVE` account | Balance increases accurately (`BigDecimal`); immutable deposit row created | `NOT EXECUTED` |
-| `TC-TXN-02` | Deposit or transfer with `0.00` or negative amount | Rejected with validation exception; zero DB mutation | `NOT EXECUTED` |
-| `TC-TXN-03` | Staff withdrawal exceeding account balance | Rejected with insufficient funds exception; balance unchanged | `NOT EXECUTED` |
-| `TC-TXN-04` | Customer internal transfer between two `ACTIVE` accounts with sufficient balance | Source debited, destination credited by exact equal amount; atomic ledger row | `NOT EXECUTED` |
-| `TC-TXN-05` | Transfer to same source & destination account | Rejected with validation exception | `NOT EXECUTED` |
-| `TC-TXN-06` | Operation involving `FROZEN` or `CLOSED` account | Rejected by account lifecycle guard | `NOT EXECUTED` |
-
-### 2.3 Persistence, Constraints & Atomicity Tests (`P` / DAO & Integration)
-
-| Test ID | Scenario | Expected Behavior | Status |
-| :--- | :--- | :--- | :---: |
-| `TC-DB-01` | Schema initialization on fresh SQLite file | All tables, foreign keys, and `CHECK` constraints created cleanly | `NOT EXECUTED` |
-| `TC-DB-02` | Foreign key enforcement check (`PRAGMA foreign_keys = ON`) | Inserting account for nonexistent customer fails with constraint violation | `NOT EXECUTED` |
-| `TC-DB-03` | Negative balance check constraint | Direct negative balance update rejected by SQLite `CHECK` constraint | `NOT EXECUTED` |
-| `TC-DB-04` | Simulated failure mid-transfer (after source debit, before commit) | JDBC `rollback()` restores source balance; zero partial ledger rows committed | `NOT EXECUTED` |
-| `TC-DB-05` | Balance reconciliation sum check (P1) | Sum of deposits minus withdrawals equals sum of current account balances | `NOT EXECUTED` |
-
-### 2.4 P1 / P2 Functional Verification (`S` + `P` + `R`)
-
-| Test ID | Scenario | Expected Behavior | Status |
-| :--- | :--- | :--- | :---: |
-| `TC-P1-01` | Staff requests freeze -> Admin approves -> Customer attempts transfer | Transfer denied while `FROZEN`; audit log records request & approval | `NOT EXECUTED` |
-| `TC-P1-02` | Statement export via Java I/O | Produces well-formed local export file matching visible `TableView` ledger | `NOT EXECUTED` |
-| `TC-P2-01` | Duplicate transfer key / risk alert trigger (if P2 scoped) | Behavior matches approved P2 specification | `NOT EXECUTED` |
+| ID | Scenario | Initial State | Action | Expected Result | Invariant(s) | Dependency | Verification Status |
+| :---: | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
+| `TC-01` | **Customer registration** | Clean DB; email unused | Call `AuthService.registerCustomer(name, email, pwd)` | Creates 1 `CUSTOMER` user + 1 `ACTIVE` account at `0` paise atomically; returns `UserSession`; rejects duplicate email on retry | `INV-03`, `INV-08` | `AuthService`, `UserDao`, `AccountDao`, `TransactionExecutor` | `NOT EXECUTED` |
+| `TC-02` | **First-run administrator setup** | DB has `0` `ADMIN` users | Check `isInitialAdminSetupRequired()` -> call `setupInitialAdmin(...)` -> call `setupInitialAdmin(...)` a second time | First call creates `ADMIN` + `INITIAL_ADMIN_CREATED` audit event; second call fails with `ConflictException` | `INV-05`, `INV-10` | `AuthService`, `UserDao`, `AuditEventDao` | `NOT EXECUTED` |
+| `TC-03` | **Staff account provisioning** | Authenticated `ADMIN` session | `AdminService.createStaffUser(...)` then `setStaffActiveStatus(id, false)` | Creates `STAFF` user + `STAFF_CREATED` audit; deactivation sets `is_active=0`, writes `STAFF_DEACTIVATED` audit, and blocks subsequent staff login | `INV-05`, `INV-10` | `AdminService`, `AuthService`, `UserDao`, `AuditEventDao` | `NOT EXECUTED` |
+| `TC-04` | **Unauthorized access attempts** | Logged in as `CUSTOMER` A (and unauthenticated session) | Attempt `TellerService.depositCash`, `AdminService.createStaffUser`, or reading Customer B's account | Service rejects every attempt with `AuthorizationException` before any balance/DB mutation | `INV-05`, `INV-06` | `SecurityContext`, all Services | `NOT EXECUTED` |
+| `TC-05` | **Valid simulated deposit** | `STAFF` logged in; Customer A `ACTIVE` account at `0` paise | `TellerService.depositCash(acctA, "500.00")` | Balance becomes `50000` paise (`₹500.00`); `1` `DEPOSIT` operation + `1` `transactions` entry (`+50000`, `balance_after=50000`) committed | `INV-02`, `INV-08`, `INV-09` | `TellerService`, `AccountDao`, `OperationDao`, `TransactionDao` | `NOT EXECUTED` |
+| `TC-06` | **Valid simulated withdrawal** | `STAFF` logged in; Customer A `ACTIVE` account at `50000` paise | `TellerService.withdrawCash(acctA, "200.00")` | Balance becomes `30000` paise (`₹300.00`); `1` `WITHDRAWAL` operation + `1` `transactions` entry (`-20000`, `balance_after=30000`) committed | `INV-01`, `INV-02`, `INV-08` | `TellerService`, `AccountDao`, `OperationDao`, `TransactionDao` | `NOT EXECUTED` |
+| `TC-07` | **Insufficient balance** | Customer A at `30000` paise | Attempt `withdrawCash(acctA, "350.00")` and `transferFunds(acctB, "350.00")` | Rejected with `InsufficientFundsException`; balance remains `30000` paise; zero rows added to `operations`/`transactions` | `INV-01`, `INV-03` | `TellerService`, `CustomerBankingService` | `NOT EXECUTED` |
+| `TC-08` | **Invalid monetary values** | Authenticated `STAFF` or `CUSTOMER` | Submit `"0"`, `"-50.00"`, `"10.123"`, `"abc"`, `""`, and overflow string exceeding `Long.MAX_VALUE` paise | `Money` parser rejects every input with `ValidationException`; zero DB writes occur | `INV-02`, `INV-12` | `Money`, `ValidationException` | `NOT EXECUTED` |
+| `TC-09` | **Successful internal transfer** | Customer A logged in (`100000` paise); Customer B `ACTIVE` (`20000` paise) | `CustomerBankingService.transferFunds(acctB, "400.00")` | A becomes `60000` paise, B becomes `60000` paise; `1` `TRANSFER` operation + `2` `transactions` rows (`-40000`, `+40000`) summing to `0` | `INV-04`, `INV-08`, `INV-09` | `CustomerBankingService`, `TransactionExecutor` | `NOT EXECUTED` |
+| `TC-10` | **Failure during transfer** | Customer A (`100000` paise), Customer B (`20000` paise); failure injected after debit/before credit or journal write | Execute transfer triggering mid-transaction exception | Exception propagates safely; `TransactionExecutor` triggers `rollback()` | `INV-03` | `CustomerBankingService`, `TransactionExecutor`, test failure stub | `NOT EXECUTED` |
+| `TC-11` | **Atomic rollback verification** | Post-failure DB state from `TC-10` (or failed multi-step DAO test) | Query `accounts`, `operations`, and `transactions` on a fresh read connection | Account A still `100000` paise, Account B still `20000` paise, zero orphan `operations` or `transactions` rows committed | `INV-03`, `INV-08` | `TransactionExecutor`, DAO query methods | `NOT EXECUTED` |
+| `TC-12` | **Concurrent withdrawal safety** | Customer A `ACTIVE` with `10000` paise (`₹100.00`) | Launch two concurrent threads executing `withdrawCash(acctA, "80.00")` simultaneously | SQLite write lock + conditional `UPDATE WHERE balance_paise >= ?` lets **at most one** succeed (`2000` paise remaining); second fails cleanly without negative balance or unhandled SQL crash | `INV-01`, `INV-03` | `TransactionExecutor`, SQLite `busy_timeout`/`BEGIN IMMEDIATE`, `AccountDao` | `NOT EXECUTED` |
+| `TC-13` | **Transaction history** | Account A has deposit (`+50000`), withdrawal (`-20000`), and transfer (`-10000`) | Call `CustomerBankingService.getOwnTransactionHistory(...)` and verify DAO ordering & immutability | Returns all 3 entries newest-first with accurate `delta_paise` and `balance_after_paise`; no DAO update/delete methods exist | `INV-08`, `INV-09` | `CustomerBankingService`, `TransactionDao` | `NOT EXECUTED` |
+| `TC-14` | **Persistence after restart** | Completed registration, deposit, and transfer persisted to SQLite file on disk | Close all `Connection` / service instances, instantiate fresh `db/` + DAOs + services pointing to same SQLite file, log in again | All users, passwords, balances, operation references, journal history, and audit events reload identically | `INV-08`, `INV-09` | `db/` connection factory, all DAOs | `NOT EXECUTED` |
+| `TC-15` | **Frozen-account restrictions (P1)** | Account A `FROZEN` by Staff request + different Admin approval | Customer A views balance/history; Staff tries deposit/withdrawal; Customer tries outgoing & incoming transfers | Customer A **can** read own balance & history; all 4 financial mutations fail with `AccountFrozenException`; approval recorded in `audit_events` | `INV-07`, `INV-10` | `AccountControlService`, `TellerService`, `CustomerBankingService` | `NOT EXECUTED` |
+| `TC-16` | **Balance reconciliation (P1)** | Account A matches ledger (`expected == stored`); Account B has simulated mismatch seeded directly in test DB | Run `ReconciliationService.reconcileAllAccounts()` | Account A reports `matched=true`; Account B reports exact `discrepancyPaise != 0` (`matched=false`); stored balance in `accounts` remains untouched | `INV-11` | `ReconciliationService`, `TransactionDao`, `AccountDao` | `NOT EXECUTED` |
+| `TC-17` | **Idempotent retry handling (P1)** | `CUSTOMER` or `STAFF` submits transfer/deposit with `idempotencyKey = "req-123"` | Submit identical operation with `"req-123"` twice (and submit conflicting payload with same `"req-123"`) | First succeeds once; identical retry prevents duplicate balance mutation (returns existing receipt or rejects cleanly per M2 P1 contract); conflicting reuse rejected | `INV-03`, `INV-08` | `operations.idempotency_key`, `OperationDao` | `NOT EXECUTED` |

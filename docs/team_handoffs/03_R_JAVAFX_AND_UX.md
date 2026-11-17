@@ -1,28 +1,31 @@
 # Team Handoff — Member R: JavaFX Presentation & User Experience (`03_R_JAVAFX_AND_UX.md`)
 
 > **Peer Role:** Equal Module Owner (**R**) — No hierarchical team lead.
-> **Scope:** JavaFX Screens, Navigation Shell, Forms, `TableView` Displays, CSS Styling, User Feedback, Mock-Compatible UI Development & Screenshots.
-> **Current Status:** `NOT STARTED` (M0 Documentation & Scaffolding Phase)
+> **Scope:** JavaFX Screens & User Workflows, Visual Design & CSS Styling, Form Controls & Feedback, Account & Transaction Displays, Screenshots & Presentation Documentation.
+> **Current Status:** `NOT STARTED` (M1 Architecture & Contract Specification Under Review)
 
 ---
 
 ## 1. Module Purpose
 
-The **JavaFX Presentation & User Experience** module provides a clean, responsive, intuitive desktop user interface for all three user roles (**Customer**, **Bank Staff**, **Administrator**). It surfaces service data and error feedback clearly while strictly delegating all business validation, authorization, and persistence to **S**'s service contracts.
+The **JavaFX Presentation & User Experience** module delivers a clean, cohesive desktop interface across **First-Run Setup / Auth**, **Customer**, **Bank Staff**, and **Administrator** workflows. It renders service-facing DTOs from **S** clearly and translates domain/authorization exceptions into helpful user feedback without embedding business logic or SQL dependencies in the UI.
 
 ---
 
-## 2. Responsibilities
+## 2. Responsibilities & M1 / M2 Deliverables
 
-- Design the shared application shell, navigation sidebar/header, and feedback dialogs (`ui/common/`).
-- Implement authentication screens (`ui/auth/`): login screen and clean role-based dashboard routing.
-- Implement role-specific workspaces:
-  - **Customer (`ui/customer/`):** Owned accounts & balance cards, internal transfer form, chronological `TableView` transaction history, P1 statement export file chooser.
-  - **Bank Staff (`ui/staff/`):** Synthetic customer registration form, account creation workflow, simulated cash deposit & withdrawal forms, customer lookup & account status view, P1 freeze/unfreeze request form.
-  - **Administrator (`ui/admin/`):** P1 pending freeze/unfreeze approval queue, staff account management view, system audit log viewer (`TableView` with filters), balance reconciliation trigger & summary view.
-- Author cohesive desktop styling (`src/main/resources/styles/`).
-- Co-design UI-facing DTOs (`dto/`) with **S** during M1.
-- Capture verified UI screenshots into `docs/report/screenshots/` and contribute UI walkthrough documentation for the UCS553 project report (`M5`).
+### M1 Deliverables (Current Milestone — Documentation Only)
+- Review presentation-facing DTOs (`UserSession`, `AccountSummary`, `TransactionReceipt`, `TransactionView`, `CustomerSearchResult`, `AdministrativeSummary`, plus P1 DTOs) and service contracts in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+- Confirm all UI inputs/outputs needed for Customer, Staff, and Admin workflows and planned demo walkthroughs ([../testing/DEMO_SCENARIOS.md](../testing/DEMO_SCENARIOS.md)).
+
+### M2 / M3 Implementation Tasks (After M1 Sign-Off)
+- Build shared shell, role navigation header/sidebar, logout bar, and alert/error banners (`ui/common/`).
+- Build First-Run Administrator Setup, Login, and Public Customer Registration views (`ui/auth/`).
+- Build Customer workspace (`ui/customer/`): single-account balance & status card, transfer form + receipt display, chronological `TableView` transaction history, P1 CSV statement export file chooser.
+- Build Bank Staff workspace (`ui/staff/`): customer/account search table, account inspection, simulated cash deposit & withdrawal forms, P1 freeze/unfreeze request dialog.
+- Build Administrator workspace (`ui/admin/`): `AdministrativeSummary` overview, Staff creation/deactivation controls, P1 pending freeze/unfreeze approval table, P1 audit event viewer, P1 balance reconciliation trigger/table.
+- Author cohesive, clean JavaFX CSS styling (`src/main/resources/styles/`).
+- Capture authentic UI screenshots (`docs/report/screenshots/`) and UI documentation in M5.
 
 ---
 
@@ -30,83 +33,81 @@ The **JavaFX Presentation & User Experience** module provides a clean, responsiv
 
 | Directory | Ownership Type | Notes |
 | :--- | :---: | :--- |
-| `src/main/java/com/tiet/banking/ui/common/` | **Primary Owner** | Shared navigation shell, header/logout bar, alert/error banners, formatters |
-| `src/main/java/com/tiet/banking/ui/auth/` | **Primary Owner** | Login screen and role routing controller |
-| `src/main/java/com/tiet/banking/ui/customer/` | **Primary Owner** | Customer dashboard, transfer form, transaction history & export UI |
-| `src/main/java/com/tiet/banking/ui/staff/` | **Primary Owner** | Staff dashboard, customer onboarding, cash deposit/withdrawal & freeze request UI |
-| `src/main/java/com/tiet/banking/ui/admin/` | **Primary Owner** | Admin dashboard, approval queue, staff management, audit & reconciliation UI |
-| `src/main/resources/styles/` | **Primary Owner** | JavaFX CSS stylesheets |
-| `docs/report/screenshots/` | **Primary Owner** | Verified application screenshots for UCS553 report (`M5`) |
-| `src/main/java/com/tiet/banking/dto/` | **Co-owned w/ S** | Request/view DTO alignment agreed in M1 |
+| `src/main/java/com/tiet/banking/ui/common/` | **Primary Owner** | Shared shell, navigation, alert/error banners, display helpers |
+| `src/main/java/com/tiet/banking/ui/auth/` | **Primary Owner** | First-run admin setup, login & public customer registration views |
+| `src/main/java/com/tiet/banking/ui/customer/` | **Primary Owner** | Customer balance, transfer form & transaction history `TableView` |
+| `src/main/java/com/tiet/banking/ui/staff/` | **Primary Owner** | Customer/account search, cash deposit & withdrawal workflows |
+| `src/main/java/com/tiet/banking/ui/admin/` | **Primary Owner** | Admin summary, staff provisioning & P1 governance/audit/reconciliation views |
+| `src/main/resources/styles/` | **Primary Owner** | JavaFX CSS stylesheet(s) |
+| `docs/report/screenshots/` | **Primary Owner** | Verified application screenshots for final UCS553 report (M5) |
+| `src/main/java/com/tiet/banking/dto/` | **Co-owned w/ S** | Presentation DTO alignment agreed in M1 |
 
 ---
 
-## 4. Dependencies on Other Modules
+## 4. Dependencies & Integration Support
 
-- **Depends on S (`service/`, `dto/`, `exception/`):** Needs agreed service interfaces, DTO definitions, and custom exception types in M1.
-- **Independent Parallel UI Development (Mock / Sample Data Strategy):** **R** does **not** need to wait for **P**'s SQLite database or **S**'s final service logic to begin building JavaFX views. Once M1 service interfaces and DTOs are frozen, **R** can implement temporary in-memory mock service providers (with synthetic sample data) behind those interfaces to test layouts, `TableView` bindings, form validation UX, and navigation immediately, then swap cleanly to **S**'s real services via `bootstrap/` in M3.
+- **Depends on S (`service/`, `dto/`, `exception/`):** Consumes agreed M1 DTOs and service interfaces.
+- **Independent Mock Development:** Once M1 contracts freeze, **R** can build and test every JavaFX view against lightweight in-memory mock service implementations using fictitious sample data—independently of SQLite progress.
+- **Startup & Navigation Collaboration:** **S** can support the application startup and navigation wiring foundation during integration (`bootstrap/` + `ui/common/`) while **R** retains primary ownership of the JavaFX presentation module, layouts, styling, and user workflows.
 
 ---
 
 ## 5. Expected Interfaces (Provisional — Pending M1 Freeze)
 
-- **Consumed from S:** Conceptual service interfaces in [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md) (`AuthService`, `CustomerService`, `AccountService`, `TransactionService`, P1 governance/audit services) injected into UI views/controllers via constructor or `bootstrap/` assembly.
-- **Consumed Exceptions:** Custom domain/auth/validation exceptions from `exception/` translated into clear, user-friendly JavaFX alerts or inline form validation labels (never raw stack traces).
+- **Consumed from S:** `AuthService`, `CustomerBankingService`, `TellerService`, `StaffService`, `AdminService`, and P1 `ReconciliationService` / `AccountControlService` ([../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md)).
+- **Consumed Exceptions:** Typed domain/validation/auth exceptions translated cleanly into UI feedback messages.
 
 ---
 
 ## 6. Integration Boundaries
 
-- **Zero Persistence Imports:** JavaFX code under `ui.*` must **never** import `com.tiet.banking.dao.*`, `com.tiet.banking.db.*`, or `java.sql.*`.
-- **Zero Business/Security Shortcuts:** UI input validation (e.g., non-empty fields, numeric format hints) improves usability, but **never** replaces service-layer validation, RBAC enforcement, or balance rules (`ADR-005`).
-- **Money Display Hygiene:** Format `BigDecimal` monetary fields cleanly for display; never convert balances into `double` inside UI controllers or `TableView` cell factories (`ADR-003`).
-- **Contract Alignment:** Any new data field needed in a JavaFX form or `TableView` must be proposed in `dto/` and reviewed with **S** rather than bypassing service contracts.
+- **Zero Persistence Coupling:** `ui.*` must **never** import `dao.*`, `dao.jdbc.*`, `db.*`, or `java.sql.*`.
+- **No Security Shortcuts:** Hiding disallowed tabs improves UX, while service-layer checks remain the true authorization boundary (`ADR-005`).
+- **Keep Controllers Simple:** Maintain readable, maintainable JavaFX controllers and clean styling without introducing external UI frameworks, complex animations, or heavy state-management libraries ([../../AGENTS.md](../../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration)).
+- **Money Display Hygiene:** Render formatted strings / `BigDecimal` from DTOs; never cast monetary values into `double` or `float`.
 
 ---
 
-## 7. Initial Tasks (For M1 -> M3 Transition)
+## 7. Review Responsibilities
 
-1. Review [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md) and [../architecture/ROLE_PERMISSIONS.md](../architecture/ROLE_PERMISSIONS.md) with **S** to confirm every field required on Customer, Staff, and Admin screens.
-2. Co-design shared DTO structures (`dto/`) and screen navigation flow in M1.
-3. On branch `feature/javafx-ui` (once M1 contracts freeze), build the common shell, login screen, three role dashboards, and CSS theme—initially runnable against temporary in-memory mock service implementations using synthetic sample data.
-4. Coordinate with **S** in M3 (`bootstrap/`) to wire real services and verify end-to-end flows.
+- Review M1 `dto/` definitions and service error semantics with **S** to confirm every JavaFX screen has all required fields without leaking internal persistence models.
+- Coordinate with **S** during M3 integration (`bootstrap/`) and verify end-to-end UI flows across all three roles.
 
 ---
 
 ## 8. Acceptance Criteria
 
-- Clean role-based navigation: Customer, Bank Staff, and Administrator each see only their authorized workspaces and features.
-- All P0 forms and `TableView`s (customer registration, account opening, cash deposit/withdrawal, balance enquiry, transfer, transaction history) bind cleanly to DTOs and handle service exceptions gracefully.
-- Consistent JavaFX CSS styling, readable typography, clear success/error feedback banners, and zero `java.sql.*` / `dao.*` coupling.
-- Verified walkthroughs (`DEMO-01`..`DEMO-03`) documented with real screenshots in `docs/report/screenshots/` during M5.
+- Startup cleanly routes to First-Run Admin Setup when no admin exists, and Login once initialized.
+- Public customer registration, three-role login/logout, staff search, cash deposit/withdrawal, customer transfer, and history `TableView` work smoothly with clear validation/error banners.
+- `FROZEN` accounts display clear restriction status and disable/report rejected operations cleanly (P1).
+- Zero `dao.*` / `java.sql.*` imports in `ui.*`; styling is consistent and legible.
 
 ---
 
 ## 9. Testing Responsibilities
 
-- **UI & Mock Walkthrough Verification:** Test form edge cases (empty fields, malformed amounts, error message rendering, table refresh after deposit/transfer) against mock providers during UI construction.
-- **End-to-End Manual Checklist (`docs/testing/DEMO_SCENARIOS.md`):** Execute and document manual verification across all three roles once wired to live SQLite services in M3/M4, capturing authentic screenshots in M5.
+- **UI Flow & Form Feedback Checks:** Verify empty/malformed inputs, error banner rendering, and table refreshes against mock providers during M2/M3 and against live SQLite services during M3/M4 (`DEMO-01`–`DEMO-04`).
+- **Report Screenshots:** Capture authentic screenshots into `docs/report/screenshots/` once end-to-end flows work in M5.
 
 ---
 
 ## 10. What Is Explicitly Outside This Module's Ownership
 
-- Implementing password hashing, RBAC security enforcement, or financial transaction business logic (owned by **S**).
-- Writing JDBC queries, SQL schemas, DAO implementations, or SQLite connection management (owned by **P**).
-- Modifying `service/` implementations directly to work around UI state instead of updating contracts via PR review.
+- Implementing `Money` validation rules, password hashing, RBAC enforcement, or JDBC transaction coordination (owned by **S**).
+- Authoring SQLite schemas, SQL queries, or JDBC DAOs (owned by **P**).
 
 ---
 
 ## 11. Current Status
 
 - **Status:** `NOT STARTED`
-- **Artifacts Existing:** Directory `.gitkeep` placeholders only (`ui/common/`, `ui/auth/`, `ui/customer/`, `ui/staff/`, `ui/admin/`, `resources/styles/`, `docs/report/screenshots/`).
-- **Screens & Screenshots:** `0` FXML/JavaFX files, `0` CSS files, `0` screenshots.
+- **Artifacts Existing:** Directory `.gitkeep` placeholders only; M1 DTO/screen contracts drafted on branch `docs/m1-architecture-contracts`.
+- **Screens & Screenshots:** `0` Java/FXML/CSS files, `0` screenshots.
 
 ---
 
 ## 12. Resume Instructions
 
-1. Read [../../AGENTS.md](../../AGENTS.md), [../../context/00_MASTER_PROJECT_CONTEXT.md](../../context/00_MASTER_PROJECT_CONTEXT.md), and [../../context/CURRENT_STATUS.md](../../context/CURRENT_STATUS.md).
-2. Review [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md), [../architecture/ROLE_PERMISSIONS.md](../architecture/ROLE_PERMISSIONS.md), and [../requirements/FEATURE_MATRIX.md](../requirements/FEATURE_MATRIX.md).
-3. Finalize DTO and service contract fields with **S** in M1 before building JavaFX screens on branch `feature/javafx-ui`.
+1. Read [../../AGENTS.md](../../AGENTS.md), [../../context/CURRENT_STATUS.md](../../context/CURRENT_STATUS.md), and [../architecture/SERVICE_CONTRACTS.md](../architecture/SERVICE_CONTRACTS.md).
+2. Confirm DTO field completeness with **S** during M1 review.
+3. Once M1 is approved, open branch `feature/javafx-ui` to implement the JavaFX views, CSS styling, and mock-compatible screen walkthroughs.

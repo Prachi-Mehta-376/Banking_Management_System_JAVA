@@ -1,7 +1,7 @@
 # Master Project Context (`00_MASTER_PROJECT_CONTEXT.md`)
 
 > **Authority Level:** Stable Master Reference for Project Identity, Scope, and Boundaries.
-> **Current Phase:** **M0 — Documentation & Architectural Scaffolding Only (No Application Code Written)**
+> **Current Phase:** **M1 — Architecture v2.0 & Contract Specification (Awaiting Team Review; Implementation Not Started)**
 
 ---
 
@@ -12,79 +12,70 @@
 | **Project Title** | Banking Management System |
 | **Course** | UCS553 — Enterprise Web Application |
 | **Institution** | Thapar Institute of Engineering and Technology (TIET), Patiala |
-| **Application Type** | Core Java Desktop Application (Java 17 + JavaFX + Plain JDBC + SQLite) |
+| **Application Type** | Core Java 17 Desktop Application (JavaFX + Plain JDBC + SQLite + Maven) |
 | **Repository Role** | Shared collaborative workspace for engineering, documentation, and academic reporting |
-| **Domain Classification** | Educational Banking Simulation (Synthetic Data & Simulated Funds Only) |
+| **Domain Classification** | Educational Banking Simulation (Fictitious Customers & Simulated Funds Only) |
 
 ---
 
 ## 2. Problem Statement & Academic Objective
 
-Traditional university banking demos often conflate UI logic with raw SQL, store money in imprecise floating-point types, omit role separation, or skip transactional guarantees during transfers.
+The goal of this project is to build the **simplest correct, explainable, and well-verified Core Java banking simulation** aligned with the **UCS553** syllabus—without overengineering or relying on Spring Boot/Hibernate:
 
-The objective of this project is to design and build a **robust, explainable, and academically defensible Banking Management System simulation** aligned with the **UCS553** syllabus. Rather than relying on heavy external enterprise frameworks (e.g., Spring Boot or Hibernate), the system demonstrates enterprise engineering discipline directly in **Core Java**:
-
-- Clean separation of concerns across Presentation, Business Service, Security, and Persistence layers.
-- Explicit ACID transaction management using plain JDBC over SQLite.
-- Role-based access control (RBAC) and customer ownership enforcement.
-- Immutable transaction recording, audit trails, and explainable administrative governance controls.
+- Clean layered separation (`JavaFX UI -> Business Services -> DAO Interfaces -> JDBC Implementations -> SQLite`).
+- Integer-paise monetary representation (`long` / `INTEGER`) paired with `BigDecimal` input validation (`ADR-003`).
+- Explicit atomic balance-plus-transaction-journal coordination via `TransactionExecutor` (`ADR-004`, `ADR-007`).
+- Service-layer RBAC and customer ownership enforcement across three distinct roles (`ADR-005`).
 
 ---
 
-## 3. Confirmed Requirements vs. Proposed Capabilities
-
-To prevent premature lock-in before architecture sign-off and research review, requirements are explicitly separated into **Confirmed Core Baseline** and **Proposed / Pending Finalization**:
+## 3. Confirmed Requirements vs. Proposed M1 Specifications
 
 ### Confirmed Core Baseline
-- Desktop Java 17 application built around a three-role model: **Customer**, **Bank Staff**, and **Administrator**.
-- Local SQLite persistence accessed through **plain JDBC** and the **DAO pattern** (no ORM).
-- Core banking simulation capabilities: customer onboarding/account creation, staff-operated cash deposit/withdrawal simulation, customer balance inquiry, customer account-to-account transfers, and transaction history.
-- Strictly **synthetic customer data** and **simulated currency**; no real banking integration or legal compliance claims.
-- Clear teammate module ownership across **S**, **P**, and **R**.
+- Three-role Java 17 desktop application: **Customer**, **Bank Staff**, and **Administrator**.
+- Local SQLite persistence via **Plain JDBC** and the **DAO pattern** (no ORM).
+- Fictitious customer data and simulated money only; not a licensed or production-ready banking system.
+- Equal peer module ownership across **S**, **P**, and **R**, keeping code student-maintainable ([../AGENTS.md](../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration)).
 
-### Proposed Capabilities (Provisional Pending M1 Sign-Off & Research Review)
-- **P1 Governance & Reliability:** Staff-initiated account freeze/unfreeze requests requiring Administrator approval (maker-checker separation), structured audit logs, Java I/O statement export, and balance reconciliation checks.
-- **P2 Research-Dependent Extensions:** Duplicate-request (idempotency) prevention, explainable rule-based fraud-risk alerts, transaction dispute workflow, and savings/current account policy variations.
-- **Technical Proposals Pending Finalization:** Exact monetary persistence format (integer minor units vs. fixed decimal representation), exact transaction boundary coordination pattern (`Connection` / Unit-of-Work), and specific SQLite schema constraints.
+### M1 Proposed Specifications (`AWAITING TEAM REVIEW`)
+- **P0 Core Architecture:** First-run Admin bootstrap (user-supplied password), public Customer registration (1 `ACTIVE` account starting at `0` paise), Admin staff provisioning, Staff search + cash deposit/withdrawal, Customer balance/history/transfer, 5-table SQLite schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`), and `TransactionExecutor`/`BankingUnitOfWork`.
+- **P1 Differentiators:** Non-destructive balance reconciliation, Administrative audit viewer, maker-checker account freeze/unfreeze (`account_action_requests`), CSV statement export, and persistent idempotency protection (`idempotency_key`).
+- **P2 Research-Dependent:** Explainable fraud alerts, transaction disputes, multiple account types, and research-justified controls.
 
 ---
 
-## 4. Intended Users and Three-Role Model
+## 4. Intended Users and Three-Role Model (M1 Policy)
 
-1. **Customer** — End user who holds one or more simulated bank accounts; can log in, inspect owned balances and transaction history, transfer funds from owned active accounts, and (proposed P1) export statements.
-2. **Bank Staff** — Branch operations user; can register synthetic customers, open simulated accounts, execute simulated cash deposits and withdrawals, inspect customer account details, and (proposed P1) initiate freeze/unfreeze requests.
-3. **Administrator** — Governance and oversight user; manages staff accounts, reviews and approves/rejects freeze/unfreeze requests (preventing unilateral staff freezes), inspects system-wide audit logs, and runs balance reconciliation.
+1. **Customer** — Publicly registers a `CUSTOMER` identity with 1 zero-balance account in v1; views own account balance and transaction history; transfers simulated funds to another active customer account; exports CSV statements (P1).
+2. **Bank Staff** — Logs in with `ADMIN`-provisioned credentials; searches customers and accounts; executes simulated cash deposits and withdrawals; requests account freeze/unfreeze (P1).
+3. **Administrator** — Performs first-run secure setup; creates and deactivates `STAFF` accounts; views administrative statistics and audit events; reviews freeze/unfreeze requests (P1). Administrators do **not** automatically act as tellers.
 
-Detailed role boundaries are proposed in [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md).
+See [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md).
 
 ---
 
 ## 5. Proposed Technology Baseline & UCS553 Curriculum Alignment
 
-| Technology / Concept | Role in System | UCS553 Curriculum Alignment | Status |
-| :--- | :--- | :--- | :--- |
-| **Java 17** | Core implementation language | Core OOP, encapsulation, inheritance, polymorphism | `PROVISIONAL` |
-| **JavaFX** | Desktop GUI presentation layer | Rich client desktop UI, event handling, `TableView`, CSS styling | `PROVISIONAL` |
-| **Plain JDBC + SQLite** | Relational persistence & ACID transactions | `Connection`, `PreparedStatement`, `ResultSet`, `commit`/`rollback` | `PROVISIONAL` |
-| **DAO Design Pattern** | Decouples SQL from business services | Enterprise layered architecture & persistence abstraction | `PROVISIONAL` |
-| **Collections & Generics** | Account/transaction lists, generic DAO/DTO contracts | Type safety, `List`, `Map`, `Optional` | `PROVISIONAL` |
-| **Custom Exceptions** | Domain errors (insufficient funds, frozen account, auth failure) | Structured error handling & propagation | `PROVISIONAL` |
-| **Java I/O** | Statement exports & configuration reading | Stream/writer-based file I/O | `PROVISIONAL` |
-| **`java.util.logging`** | Diagnostic & operational application logging | Standard JDK logging infrastructure | `PROVISIONAL` |
-| **Maven** | Build, dependency & test lifecycle management | Standard Java project structure & build automation | `PROVISIONAL` |
+| Technology / Concept | Role in System | Status |
+| :--- | :--- | :---: |
+| **Java 17** | Core OOP implementation language | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **JavaFX** | Desktop GUI presentation layer | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **Plain JDBC + SQLite** | 5-table relational persistence, `PreparedStatement`, atomic transactions | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **DAO Design Pattern** | Separates SQL queries from business services | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **Collections, Generics & Custom Exceptions** | DTO lists, `TransactionWork<T>`, typed domain/auth exceptions | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **Java I/O & `java.util.logging`** | P1 CSV statement export, config loading & operational diagnostics | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **Maven** | Build & test lifecycle (`pom.xml` deferred to M2) | `PROVISIONAL — AWAITING TEAM REVIEW` |
 
-**Explicit Technology Exclusions:** Spring Boot, Hibernate/JPA, React, microservices, external cloud databases, and real payment gateways are explicitly excluded to stay strictly aligned with UCS553.
+**Explicit Exclusions:** Spring Boot, Hibernate/JPA, React, microservices, external payment rails, and real identity/KYC APIs.
 
 ---
 
-## 6. High-Level Architecture Overview (Proposed)
+## 6. High-Level Architecture Overview (M1 v2.0 Proposal)
 
-The system follows a strict **three-tier layered architecture** with unidirectional dependencies:
-
-1. **Presentation Layer (`com.tiet.banking.ui.*`)** — JavaFX views/controllers consuming DTOs and calling service interfaces. Must never directly access DAOs or JDBC.
-2. **Business Service & Security Layer (`com.tiet.banking.service.*`, `security.*`, `dto.*`, `exception.*`)** — Enforces business rules, input validation, RBAC, ownership verification, and atomic transaction orchestration.
-3. **Persistence Layer (`com.tiet.banking.dao.*`, `dao.jdbc.*`, `db.*`)** — Manages SQLite connections, parameterized SQL queries, and entity mapping.
-4. **Domain & Cross-Cutting (`com.tiet.banking.model.*`, `util.*`, `bootstrap.*`)** — Core entities, enums, logging/file I/O utilities, and application startup wiring.
+1. **JavaFX Presentation (`com.tiet.banking.ui.*` — R):** Screens, forms, `TableView` displays, CSS styling; interacts solely with Business Services via DTOs.
+2. **Business Services & Security (`com.tiet.banking.service.*`, `security.*`, `exception.*` — S):** Enforces `INV-01`–`INV-12`, role/ownership checks, `Money` validation, and `TransactionExecutor` orchestration.
+3. **DAO & SQLite Persistence (`com.tiet.banking.dao.*`, `dao.jdbc.*`, `db.*` — P):** Implements `TransactionExecutor`, `BankingUnitOfWork`, and parameterized SQLite DAOs with `PRAGMA foreign_keys = ON`.
+4. **Shared Models, DTOs & Bootstrap:** `model.*`, `dto.*`, `util.*`, `bootstrap.*`.
 
 See [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md).
 
@@ -92,43 +83,37 @@ See [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_AR
 
 ## 7. Team Members & Peer Responsibilities
 
-The team consists of **three equal peers** (no hierarchical team lead):
-
-- **S — Banking Engine, Security & Integration:** Business services, authentication/RBAC, financial rules, validation, exception hierarchy, bootstrap wiring, service & integration tests. ([01_S_BANKING_ENGINE.md](../docs/team_handoffs/01_S_BANKING_ENGINE.md))
-- **P — Database, JDBC & Reliability:** SQLite schema, connection & transaction infrastructure, DAO interfaces & JDBC implementations, DB constraints, persistence tests. ([02_P_DATABASE_AND_JDBC.md](../docs/team_handoffs/02_P_DATABASE_AND_JDBC.md))
-- **R — JavaFX Presentation & UX:** JavaFX screens across roles, forms, `TableView` displays, CSS styling, user feedback, mock-backed UI prototyping, screenshots & UI documentation. ([03_R_JAVAFX_AND_UX.md](../docs/team_handoffs/03_R_JAVAFX_AND_UX.md))
+Three equal peers (**S**, **P**, **R** — no designated team leader):
+- **S:** Banking Engine, Security, Business Services, Integration & Service/Integration Tests ([01_S_BANKING_ENGINE.md](../docs/team_handoffs/01_S_BANKING_ENGINE.md))
+- **P:** SQLite Database, Plain JDBC, DAOs, `TransactionExecutor` & Persistence Tests ([02_P_DATABASE_AND_JDBC.md](../docs/team_handoffs/02_P_DATABASE_AND_JDBC.md))
+- **R:** JavaFX Presentation, Visual Design, Workflows & UI Documentation ([03_R_JAVAFX_AND_UX.md](../docs/team_handoffs/03_R_JAVAFX_AND_UX.md))
 
 ---
 
-## 8. Confirmed Scope Boundaries & Pending Decisions
+## 8. Confirmed Scope Boundaries & Pending Review Gates
 
-### Scope Boundaries
-- **In Scope:** Local desktop educational simulation using synthetic records, single-node SQLite persistence, role-based workflows, transactional consistency, and explainable governance/audit trails.
-- **Out of Scope:** Live external network transfers (UPI/NEFT/RTGS/IMPS), real KYC verification (Aadhaar/PAN APIs), production cryptography/HSMs, multi-server clustering, and real regulatory certification.
-
-### Pending Architecture Decisions & External Dependencies
-- **Gemini Deep Research Review:** External research output on Indian banking/RBI conceptual alignment and fraud-risk controls has not yet been reviewed; `P2` features and regulatory traceability tables remain open placeholders.
-- **Open ADRs:** `ADR-001` through `ADR-007` in [DECISIONS.md](DECISIONS.md) require formal team agreement before M1 contract freeze.
-- **Open Design Risks:** Transaction coordination ownership, RBAC enforcement boundaries, SQLite concurrency/security limits, and account lifecycle states documented in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+- **In Scope:** Single-node local desktop simulation, fictitious customer records, 1 account per customer in v1, `ACTIVE`/`FROZEN` states, atomic balance-plus-journal ledger, and reproducible tests (`TC-01`–`TC-17`).
+- **Out of Scope:** Account closure in P0, multi-account per customer in v1, full bank-wide general ledger, automatic financial retries in P0, real RBI/KYC integrations.
+- **Pending Review Gates:**
+  1. Team review and approval of M1 ADRs (`ADR-001`–`ADR-008`) and contracts (`docs/architecture/*`).
+  2. External **Gemini Deep Research** review (`docs/research/RESEARCH_FINDINGS.md`, `REGULATORY_TRACEABILITY.md`).
 
 ---
 
 ## 9. Authoritative Document Map
 
 - **Agent & Coding Rules:** [../AGENTS.md](../AGENTS.md)
-- **Project Vision & Workflows:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)
-- **Technical Foundation:** [TECHNICAL_CONTEXT.md](TECHNICAL_CONTEXT.md)
-- **Current Progress:** [CURRENT_STATUS.md](CURRENT_STATUS.md) & [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)
-- **Architectural Decisions & Risks:** [DECISIONS.md](DECISIONS.md) & [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
-- **Session Continuity:** [SESSION_LOG.md](SESSION_LOG.md) & [SESSION_HANDOFF.md](SESSION_HANDOFF.md)
-- **Architecture & Contracts:** [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md), [DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md), [SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md), [ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md), [TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md)
-- **Requirements & Testing:** [../docs/requirements/REQUIREMENTS.md](../docs/requirements/REQUIREMENTS.md), [FEATURE_MATRIX.md](../docs/requirements/FEATURE_MATRIX.md), [../docs/testing/TEST_PLAN.md](../docs/testing/TEST_PLAN.md)
-- **Research & Traceability:** [../docs/research/RESEARCH_FINDINGS.md](../docs/research/RESEARCH_FINDINGS.md), [REGULATORY_TRACEABILITY.md](../docs/research/REGULATORY_TRACEABILITY.md)
+- **Project Vision & Technical Context:** [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md), [TECHNICAL_CONTEXT.md](TECHNICAL_CONTEXT.md)
+- **Status & Implementation Tracking:** [CURRENT_STATUS.md](CURRENT_STATUS.md), [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)
+- **Decisions & Risks:** [DECISIONS.md](DECISIONS.md), [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
+- **Session Continuity:** [SESSION_LOG.md](SESSION_LOG.md), [SESSION_HANDOFF.md](SESSION_HANDOFF.md)
+- **M1 Architecture Specs:** [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md), [DATABASE_DESIGN.md](../docs/architecture/DATABASE_DESIGN.md), [SERVICE_CONTRACTS.md](../docs/architecture/SERVICE_CONTRACTS.md), [ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISSIONS.md), [TRANSACTION_MODEL.md](../docs/architecture/TRANSACTION_MODEL.md)
+- **Requirements, Testing & Research:** [../docs/requirements/REQUIREMENTS.md](../docs/requirements/REQUIREMENTS.md), [FEATURE_MATRIX.md](../docs/requirements/FEATURE_MATRIX.md), [../docs/testing/TEST_PLAN.md](../docs/testing/TEST_PLAN.md), [../docs/research/RESEARCH_FINDINGS.md](../docs/research/RESEARCH_FINDINGS.md), [REGULATORY_TRACEABILITY.md](../docs/research/REGULATORY_TRACEABILITY.md)
 
 ---
 
 ## 10. Academic & Security Limitations Disclaimer
 
-1. **Educational Simulation Only:** This system simulates banking mechanics for coursework evaluation under **UCS553**. No real funds or customer records are ever processed.
-2. **No Regulatory Compliance Claims:** While conceptual inspiration may be drawn from standard banking practices (pending research review), this software makes **no claim** of RBI compliance, legal compliance, or audit certification.
-3. **Local SQLite Security Limitations:** Local desktop SQLite storage is inherently accessible to the host OS user; therefore, security controls (password hashing, RBAC, audit logging) demonstrate software architecture principles rather than enterprise production hardening.
+1. **Educational Simulation Only:** Processes fictitious identities and simulated money for **UCS553** coursework evaluation only.
+2. **No Regulatory Compliance Claims:** Pending Gemini Deep Research review; makes no claim of RBI approval, statutory compliance, or production banking security.
+3. **Desktop SQLite Threat Boundary:** A local SQLite file cannot protect records against an OS user with direct filesystem read/write access (`RISK-03`).
