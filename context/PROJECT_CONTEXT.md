@@ -58,11 +58,11 @@ For full permissions, first-run bootstrap rules, and frozen-account restrictions
 | Milestone | Scope | Exit Criteria | Current State |
 | :--- | :--- | :--- | :--- |
 | **M0 — Foundation & Context** | Repository tree, `.gitignore`, `AGENTS.md`, `README.md`, `context/`, `docs/` | Verified and committed on `main` (`3929940`) | **Complete** |
-| **M1 — Architecture v2.0 & Contracts** | Financial model (`ADR-003`/`004`/`007`/`008`), 5-table DB spec, invariants, DTOs, services, test plan, student coding rules | PR reviewed and approved by `S`, `P`, `R` | **In Review (`docs/m1-architecture-contracts`)** |
-| **M2 — Core Persistence & Banking Engine** | Maven `pom.xml`, SQLite schema & `TransactionExecutor` (`P`), `Money`/Security/Services (`S`), unit & DAO tests | `TC-01`–`TC-14` implemented and passing | `NOT STARTED` |
-| **M3 — JavaFX UI & Integration** | JavaFX views & CSS (`R`), startup/navigation wiring (`S`+`R`), live SQLite integration | All P0 workflows functional end-to-end | `NOT STARTED` |
-| **M4 — P1 Controls & Verification** | Reconciliation, audit viewer, freeze/unfreeze maker-checker, CSV export, idempotency | P1 scenarios (`TC-15`–`TC-17`) verified | `NOT STARTED` |
-| **M5 — Academic Report & Viva** | UI screenshots (`docs/report/screenshots/`), demo dry run, UCS553 report | Submission-ready repository and report | `NOT STARTED` |
+| **M1 — Architecture v2.0 & Contracts** | Financial model (`ADR-003`/`004`/`007`/`008`), DB spec, invariants, DTOs, services, test plan | Approved by `S` as working baseline; merged via PR #1 (`5b9fad2`) | **Complete** |
+| **M2 — Core Persistence & Banking Engine** | Maven `pom.xml`, 7-table SQLite schema & `TransactionExecutor`, `Money`/Security/Services | `MoneyValidationTest`, `DatabasePersistenceTest`, `AuthAndRbacTest` passing | **Complete** |
+| **M3 — JavaFX UI & Integration** | JavaFX views & CSS, `AppNavigator`/`ServiceRegistry`, live SQLite integration | All P0 workflows verified in `BankingEngineIntegrationTest` & live GUI test | **Complete** |
+| **M4 — P1 Controls & Verification** | Reconciliation, audit viewer, freeze/unfreeze maker-checker, CSV export, idempotency | All P1 controls implemented and verified (`12/12` passing) | **Complete** |
+| **M5 — Academic Report & Team Release** | UI screenshots (`docs/report/screenshots/`), Maven Wrapper, portable README, UCS553 report evidence | Prepared and verified for teammate onboarding (`main`) | **Complete** |
 
 ---
 

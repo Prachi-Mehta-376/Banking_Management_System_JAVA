@@ -2,7 +2,7 @@
 
 This file governs all AI coding assistants and engineering sessions working in the **Banking Management System (UCS553 — Enterprise Web Application)** repository.
 
-> **Current Phase Notice:** This repository is in **M1 — Architecture v2.0 & Contract Specification (Awaiting Team Review; Implementation Not Started)**. Verify `context/CURRENT_STATUS.md` and actual repository contents before assuming any code, schema, build file, or test exists.
+> **Current Phase Notice:** This repository has completed its **P0 + P1 Working Implementation Baseline** (verified by automated and live GUI tests; prepared for teammate onboarding and UCS553 evaluation). Check [context/CURRENT_STATUS.md](context/CURRENT_STATUS.md) and actual source files before making changes.
 
 ---
 

@@ -1,7 +1,7 @@
 # Master Project Context (`00_MASTER_PROJECT_CONTEXT.md`)
 
 > **Authority Level:** Stable Master Reference for Project Identity, Scope, and Boundaries.
-> **Current Phase:** **M1 — Architecture v2.0 & Contract Specification (Awaiting Team Review; Implementation Not Started)**
+> **Current Phase:** **Implemented & Verified Working Baseline (`P0` + `P1` Complete; `P2` Deferred; Ready for Teammate Onboarding)**
 
 ---
 
@@ -37,10 +37,10 @@ The goal of this project is to build the **simplest correct, explainable, and we
 - Fictitious customer data and simulated money only; not a licensed or production-ready banking system.
 - Equal peer module ownership across **S**, **P**, and **R**, keeping code student-maintainable ([../AGENTS.md](../AGENTS.md#5-student-level-engineering-code-quality--practical-collaboration)).
 
-### M1 Proposed Specifications (`AWAITING TEAM REVIEW`)
-- **P0 Core Architecture:** First-run Admin bootstrap (user-supplied password), public Customer registration (1 `ACTIVE` account starting at `0` paise), Admin staff provisioning, Staff search + cash deposit/withdrawal, Customer balance/history/transfer, 5-table SQLite schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`), and `TransactionExecutor`/`BankingUnitOfWork`.
-- **P1 Differentiators:** Non-destructive balance reconciliation, Administrative audit viewer, maker-checker account freeze/unfreeze (`account_action_requests`), CSV statement export, and persistent idempotency protection (`idempotency_key`).
-- **P2 Research-Dependent:** Explainable fraud alerts, transaction disputes, multiple account types, and research-justified controls.
+### Working Baseline (`APPROVED BY S — IMPLEMENTED & VERIFIED`)
+- **P0 Core Application (`IMPLEMENTED`):** First-run Admin bootstrap (user-supplied password), public Customer registration (1 `ACTIVE` account starting at `0` paise), Admin staff provisioning, Staff search + cash deposit/withdrawal, Customer balance/history/transfer, SQLite persistence via `TransactionExecutor`/`BankingUnitOfWork` and Plain JDBC DAOs.
+- **P1 Differentiators (`IMPLEMENTED`):** 7-table schema (`users`, `accounts`, `operations`, `transactions`, `audit_events`, `account_action_requests`, `idempotency_records`), non-destructive balance reconciliation, isolated rollback sandbox, administrative audit viewer, maker-checker account freeze/unfreeze, formula-safe CSV statement export, and persistent idempotency protection (`idempotency_records`).
+- **P2 Optional Extensions (`DEFERRED`):** Explainable fraud alerts, transaction disputes, multiple account types, and research-justified controls remain deferred.
 
 ---
 
@@ -58,13 +58,13 @@ See [../docs/architecture/ROLE_PERMISSIONS.md](../docs/architecture/ROLE_PERMISS
 
 | Technology / Concept | Role in System | Status |
 | :--- | :--- | :---: |
-| **Java 17** | Core OOP implementation language | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **JavaFX** | Desktop GUI presentation layer | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **Plain JDBC + SQLite** | 5-table relational persistence, `PreparedStatement`, atomic transactions | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **DAO Design Pattern** | Separates SQL queries from business services | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **Collections, Generics & Custom Exceptions** | DTO lists, `TransactionWork<T>`, typed domain/auth exceptions | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **Java I/O & `java.util.logging`** | P1 CSV statement export, config loading & operational diagnostics | `PROVISIONAL — AWAITING TEAM REVIEW` |
-| **Maven** | Build & test lifecycle (`pom.xml` deferred to M2) | `PROVISIONAL — AWAITING TEAM REVIEW` |
+| **Java 17** | Core OOP implementation language | `IMPLEMENTED & VERIFIED` |
+| **JavaFX 17** | Desktop GUI presentation layer | `IMPLEMENTED & VERIFIED` |
+| **Plain JDBC + SQLite** | 7-table relational persistence, `PreparedStatement`, atomic transactions | `IMPLEMENTED & VERIFIED` |
+| **DAO Design Pattern** | Separates SQL queries from business services | `IMPLEMENTED & VERIFIED` |
+| **Collections, Generics & Custom Exceptions** | DTO lists, `TransactionWork<T>`, typed domain/auth exceptions | `IMPLEMENTED & VERIFIED` |
+| **Java I/O & `java.util.logging`** | P1 CSV statement export, config loading & operational diagnostics | `IMPLEMENTED & VERIFIED` |
+| **Maven & Maven Wrapper** | Build, test & JavaFX launch lifecycle (`pom.xml`, `mvnw`, `mvnw.cmd`) | `IMPLEMENTED & VERIFIED` |
 
 **Explicit Exclusions:** Spring Boot, Hibernate/JPA, React, microservices, external payment rails, and real identity/KYC APIs.
 
@@ -94,9 +94,9 @@ Three equal peers (**S**, **P**, **R** — no designated team leader):
 
 - **In Scope:** Single-node local desktop simulation, fictitious customer records, 1 account per customer in v1, `ACTIVE`/`FROZEN` states, atomic balance-plus-journal ledger, and reproducible tests (`TC-01`–`TC-17`).
 - **Out of Scope:** Account closure in P0, multi-account per customer in v1, full bank-wide general ledger, automatic financial retries in P0, real RBI/KYC integrations.
-- **Pending Review Gates:**
-  1. Team review and approval of M1 ADRs (`ADR-001`–`ADR-008`) and contracts (`docs/architecture/*`).
-  2. External **Gemini Deep Research** review (`docs/research/RESEARCH_FINDINGS.md`, `REGULATORY_TRACEABILITY.md`).
+- **Remaining Review / Open Gates:**
+  1. Working development baseline approved by **S** (`ADR-001`–`ADR-008` implemented in `src/`); shared with **P** and **R** for teammate onboarding and review.
+  2. External **Gemini Deep Research** review remains pending (`docs/research/RESEARCH_FINDINGS.md`, `REGULATORY_TRACEABILITY.md`).
 
 ---
 

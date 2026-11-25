@@ -1,6 +1,6 @@
 # Software Requirements Specification (`REQUIREMENTS.md`)
 
-> **Version:** M1 v2.0 Specification (`PROPOSED — AWAITING TEAM REVIEW`)
+> **Version:** Working Development Baseline (Approved by S — P0 + P1 Implemented; P2 Deferred)
 > **Course Context:** UCS553 — Enterprise Web Application (Thapar Institute of Engineering and Technology)
 
 ---

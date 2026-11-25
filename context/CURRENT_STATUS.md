@@ -1,6 +1,6 @@
 # Current Status (`CURRENT_STATUS.md`)
 
-> **Last Updated:** 2026-11-25 (Full P0 + P1 Implementation, Automated Tests & Live GUI Verification Complete)
+> **Last Updated:** 2026-11-25 (Final Release Preparation — Maven Wrapper, Portable Onboarding & Clean-Checkout Verification)
 > **Rule:** Never report code, builds, or tests as passing unless observed in the current repository.
 
 ---
@@ -23,6 +23,6 @@
 
 ## 2. Current Verification Snapshot
 
-- **Build & Test:** `mvn clean test` passed (`12` tests across `5` test classes, `0` failures/errors/skipped).
-- **GUI Smoke Launch:** `mvn -q javafx:run` launched cleanly on Temurin JDK 17 (`arm64`) against temporary isolated DB.
+- **Build & Test:** `./mvnw clean test` passes (`12` tests across `5` test classes, `0` failures/errors/skipped); non-GUI suite `./mvnw test -DexcludedGroups=gui` passes (`11` tests).
+- **Portability & GUI Smoke Launch:** Official Apache Maven Wrapper (`mvnw` / `mvnw.cmd`) added (`only-script`, Maven 3.9.9); `LiveGuiVerificationAndScreenshotTest` isolates test screenshots to `@TempDir` (`@Tag("gui")`); JavaFX launches cleanly against an isolated DB and auto-initializes all 7 SQLite tables.
 - **Report Evidence:** Prepared [../docs/report/TECHNICAL_REPORT_EVIDENCE.md](../docs/report/TECHNICAL_REPORT_EVIDENCE.md) and 12 live PNG screenshots under `docs/report/screenshots/`.

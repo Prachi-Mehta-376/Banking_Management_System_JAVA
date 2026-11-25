@@ -132,3 +132,28 @@
 - **Blockers:** None for application execution; student names/roll numbers & guide details in `TECHNICAL_REPORT_EVIDENCE.md` left blank for manual fill-in.
 - **Next Actions:**
   - Fill in student/guide cover details if needed and run `mvn javafx:run` for the UCS553 demonstration.
+
+---
+
+## Session 5 — 2026-11-25 (Final Release Preparation & Teammate Onboarding)
+- **Contributor:** Release Preparation Session (`S` baseline shared with `P` and `R`)
+- **Branch:** `main`
+- **Commit:** Release commit `docs: prepare banking application for team onboarding and release`
+- **Objective:** Verify portability, clean-checkout reproducibility, privacy, and repository hygiene; add the official Apache Maven Wrapper; update `README.md` and context status docs; and publish cleanly to `origin/main`.
+- **Work Completed:**
+  - Restored tracked PNG screenshots and updated `LiveGuiVerificationAndScreenshotTest` with `@Tag("gui")` and a temporary default screenshot output directory (`-Dbanking.screenshots.dir` override) so running tests keeps tracked screenshots clean.
+  - Added official Apache Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`, `only-script` type targeting Maven `3.9.9`).
+  - Rewrote `README.md` for teammate onboarding (macOS/Linux + Windows PowerShell wrapper commands, embedded genuine screenshots, prerequisites, first-run walkthrough, project structure, test commands, and simulation limitations).
+  - Synchronized `AGENTS.md`, `context/` files, `SYSTEM_ARCHITECTURE.md`, `REQUIREMENTS.md`, and `TECHNICAL_REPORT_EVIDENCE.md` (removing hardcoded local `JAVA_HOME` paths and stale pre-implementation banners without fabricating `P`/`R` sign-offs).
+- **Files Changed:**
+  - `README.md`, `AGENTS.md`, `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`
+  - `src/test/java/com/tiet/banking/integration/LiveGuiVerificationAndScreenshotTest.java`
+  - `context/00_MASTER_PROJECT_CONTEXT.md`, `CURRENT_STATUS.md`, `DECISIONS.md`, `PROJECT_CONTEXT.md`, `SESSION_HANDOFF.md`, `SESSION_LOG.md`, `TECHNICAL_CONTEXT.md`
+  - `docs/architecture/SYSTEM_ARCHITECTURE.md`, `docs/requirements/REQUIREMENTS.md`, `docs/report/TECHNICAL_REPORT_EVIDENCE.md`
+- **Verification Performed:**
+  - Workspace & isolated clean-checkout copy (`153` candidate files, zero `target/` or runtime DB): `./mvnw clean test` passed (`12/12`), `./mvnw test -DexcludedGroups=gui` passed (`11/11`), and `./mvnw -q javafx:run` initialized `data/banking.db` with all `7` SQLite tables on macOS (`arm64`, Temurin JDK 17).
+  - Tracked screenshots verified unmodified after test runs; privacy, relative link, `.gitignore`, and `git diff --check` audits passed.
+- **Decisions:** None
+- **Blockers:** None
+- **Next Actions:**
+  - Teammates `P` and `R` can clone/pull `main` and run `./mvnw clean test` (`.\mvnw.cmd clean test` on Windows) and `./mvnw javafx:run` (`.\mvnw.cmd javafx:run`).

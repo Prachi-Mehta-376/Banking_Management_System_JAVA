@@ -1,92 +1,183 @@
 # Banking Management System (UCS553 — Enterprise Web Application)
 
-> **Project Status:** **Implemented & Verified Baseline (`P0` + `P1` Complete; `P2` Deferred)**
-> Built with Java 17, JavaFX 17, Plain JDBC, SQLite, Maven, and JUnit 5. All 12 automated unit, persistence, integration, and live JavaFX GUI tests pass (`0` failures, `0` skipped).
+An educational Core Java 17 desktop banking simulation developed for **UCS553 — Enterprise Web Application** at **Thapar Institute of Engineering and Technology (TIET), Patiala**, built with **JavaFX 17**, **Plain JDBC**, **SQLite**, and **Maven**.
 
 ---
 
-## 1. Academic Context & Overview
+## Main Features
 
-- **Course:** UCS553 — Enterprise Web Application
-- **Institution:** Thapar Institute of Engineering and Technology, Patiala
-- **Project Type:** Core Java 17 Desktop Application with JavaFX, Plain JDBC, and SQLite
-- **Team Ownership Scope:** **S** (Banking Engine, Security & Integration), **P** (Database, JDBC & Persistence), **R** (JavaFX Presentation & UX)
+- **First-Run Administrator Setup:** Prompts for an operator-chosen password on first launch (salted `PBKDF2WithHmacSHA256`), permanently locks initial setup once an administrator exists, and includes zero hardcoded default credentials.
+- **Customer Registration & Authentication:** Public registration atomically creates a `CUSTOMER` login and one active zero-balance account (`AC000001` format); unified sign-in routes `Customer`, `Bank Staff`, and `Administrator` sessions.
+- **Role-Based Dashboards:** Dedicated JavaFX workspaces for Customers, Bank Staff, and Administrators styled with `banking.css`.
+- **Simulated Teller Operations:** Staff can search customers/accounts and execute simulated cash deposits and withdrawals with immediate transaction receipts.
+- **Internal Fund Transfers:** Customers can transfer simulated funds to another active customer account with atomic debit/credit updates and zero-sum journal entries.
+- **Transaction History & CSV Statement Export:** Customers and Staff can view chronological transaction tables; Customers can export RFC-4180 CSV statements with spreadsheet formula-injection neutralization.
+- **Role-Based Authorization:** Service-layer RBAC and customer account ownership checks enforce non-teller administrator boundaries (`STAFF` executes cash operations; `ADMIN` has governance and read-only customer oversight).
+- **Persistent SQLite Storage:** 7-table schema (`PRAGMA foreign_keys = ON`, WAL mode) accessed exclusively via Plain JDBC `PreparedStatement` DAOs and explicit `TransactionExecutor` / `BankingUnitOfWork` atomicity.
+- **Banking Integrity Control Center:**
+  - **Balance Reconciliation:** Non-destructive check comparing stored `balance_paise` against committed journal sums (`SUM(delta_paise)`) and transfer zero-sum invariants.
+  - **Atomic Rollback Proof Sandbox:** Demonstrates mid-transfer failure rollback on an isolated temporary SQLite database without touching live data.
+  - **Maker-Checker Account Control:** Staff request account freeze/unfreeze actions reviewed by an Administrator; frozen accounts remain viewable while rejecting debits, credits, and transfers.
+  - **Administrative Audit Trail:** Same-transaction audit logging of sensitive governance actions, searchable in the Admin dashboard.
+- **Persistent Duplicate-Request Protection:** `idempotency_records` supports safe duplicate-request replay and payload-conflict detection across financial operations.
 
-The **Banking Management System** is an educational desktop banking simulation using fictitious customers and simulated funds. It demonstrates layered Core Java architecture, exact integer-paise arithmetic, atomic balance-plus-transaction-journal persistence, service-layer RBAC, and the **Banking Integrity Control Center** (balance reconciliation, isolated atomic rollback verification, maker-checker account freeze controls, and audit logging).
-
----
-
-## 2. Implemented Features
-
-### P0 — Working Banking Application (`IMPLEMENTED & VERIFIED`)
-- **First-Run Administrator Setup:** One-time bootstrap accepting a user-supplied password (salted `PBKDF2WithHmacSHA256`), atomically locked once an admin exists, with zero hardcoded default credentials.
-- **Public Customer Registration:** Creates a `CUSTOMER` identity and one `ACTIVE` bank account (`AC000001` format) starting at `₹0.00` atomically.
-- **Three-Role Authentication & RBAC:** Enforced in business services across `CUSTOMER`, `STAFF`, and `ADMIN` (non-teller admin boundary + read-only admin customer lookup).
-- **Bank Staff Operations:** Customer/account search, account inspection, simulated cash deposit & withdrawal with receipts.
-- **Customer Banking:** Own account overview, internal transfers with zero-sum journal entries, chronological transaction history (`TableView`).
-- **Persistence & Atomicity:** 7-table SQLite schema (`PRAGMA foreign_keys = ON`), plain JDBC DAOs (`PreparedStatement`), `TransactionExecutor` + `BankingUnitOfWork` rollback on failure, and `CommitOutcomeUncertainException` handling.
-
-### P1 — Banking Integrity Control Center & Governance (`IMPLEMENTED & VERIFIED`)
-- **Balance Reconciliation (`ReconciliationService`):** Non-destructive check comparing stored `balance_paise` against `SUM(transactions.delta_paise)`, verifying running `balance_after_paise` and transfer zero-sum invariants.
-- **Isolated Rollback Proof Sandbox:** Demonstrates mid-transfer failure rollback on an isolated temporary SQLite database without touching live data.
-- **Maker-Checker Account Control (`AccountControlService`):** Staff freeze/unfreeze requests reviewed by a different Admin; `FROZEN` accounts remain viewable while rejecting deposits, withdrawals, and transfers.
-- **Audit Trail (`AuditEventDao` + Admin Viewer):** Same-transaction audit logging for sensitive state changes; rejected attempts logged via `java.util.logging`.
-- **CSV Statement Export (`CsvStatementExporter`):** Java I/O export with RFC-4180 quoting and formula-injection neutralization.
-- **Persistent Idempotency (`IdempotencyDao`):** Duplicate-request protection across financial operations with conflict detection.
-
-### P2 — Optional Extensions (`DEFERRED`)
-- Explainable fraud alerts, transaction disputes, and multiple account types remain deferred to protect P0/P1 reliability.
+> Optional `P2` extensions (explainable fraud alerts, transaction disputes, and multiple account types) remain deferred outside this release baseline.
 
 ---
 
-## 3. Build, Test & Run Instructions
+## Application Screenshots
 
-**Prerequisites:** JDK 17 (Temurin 17 verified on macOS `arm64`) and Apache Maven 3.10+.
+All screenshots below are genuine captures from the live JavaFX application using synthetic demo data.
+
+### Login Screen
+![Three-Role Login Screen](docs/report/screenshots/02_login_screen.png)
+
+### Customer Dashboard
+![Customer Account Overview](docs/report/screenshots/05_customer_dashboard_overview.png)
+
+### Bank Staff Dashboard
+![Bank Staff Cash Deposit and Withdrawal](docs/report/screenshots/04_staff_dashboard_cash_ops.png)
+
+### Administrator Dashboard
+![Administrator Dashboard Overview](docs/report/screenshots/09_admin_dashboard_overview.png)
+
+### Banking Integrity Control Center
+![Banking Integrity Control Center](docs/report/screenshots/10_admin_integrity_control_center.png)
+
+See [docs/report/TECHNICAL_REPORT_EVIDENCE.md](docs/report/TECHNICAL_REPORT_EVIDENCE.md) for all 12 captured screenshots and architecture diagrams.
+
+---
+
+## Prerequisites
+
+- **JDK 17** (any standard Java 17 distribution on `PATH`)
+- **Maven Wrapper included** (`./mvnw` / `.\mvnw.cmd`) — pre-installed Maven is optional (or Apache Maven 3.9+ if running `mvn` directly)
+- **Graphical desktop session** (required to launch the JavaFX UI and execute the live GUI test)
+- **Internet access on first build** (to download Maven Wrapper distribution and Maven/JavaFX/SQLite dependencies into the local `~/.m2` cache)
+
+---
+
+## Installation & Launch
+
+### 1. Clone and enter the repository
 
 ```bash
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
-
-# Compile and run all 12 unit, persistence, integration, and live JavaFX tests
-mvn clean test
-
-# Launch the desktop JavaFX application (creates runtime DB at data/banking.db)
-mvn javafx:run
+git clone https://github.com/Prachi-Mehta-376/Banking_Management_System_JAVA.git
+cd Banking_Management_System_JAVA
 ```
+
+### 2. Verify Java 17
+
+```bash
+java -version
+```
+
+Confirm the output reports Java `17.x`. If you have multiple JDKs installed and `java -version` prints a different version, set `JAVA_HOME` in your terminal before running Maven commands:
+
+- **macOS / Linux:** `export JAVA_HOME=/path/to/jdk-17`
+- **Windows (PowerShell):** `$env:JAVA_HOME = "C:\Path\To\jdk-17"`
+
+### 3. Build and run tests
+
+- **macOS / Linux:**
+  ```bash
+  ./mvnw clean test
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\mvnw.cmd clean test
+  ```
+
+### 4. Launch the JavaFX application
+
+- **macOS / Linux:**
+  ```bash
+  ./mvnw javafx:run
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\mvnw.cmd javafx:run
+  ```
+
+> **Platform verification note:** Verified on macOS (`arm64`, Temurin JDK 17). Windows and Linux execution rely on the standard Maven Wrapper, OpenJFX platform classifiers, and `sqlite-jdbc` native libraries, and have not been directly tested on those operating systems.
 
 ---
 
-## 4. Repository Structure
+## First-Run Walkthrough
+
+On launch, the application automatically initializes its local SQLite database at `data/banking.db`. No default credentials are bundled.
+
+1. **Initial Administrator Setup:** On first launch, create your Administrator account with a custom password (minimum 8 characters).
+2. **Administrator Dashboard:** After setup completes, the application signs you into the Administrator workspace.
+3. **Create a Staff Account:** Open **Staff Management** and provision a Bank Staff account.
+4. **Register Two Customer Accounts:** Log out, click **New Customer Registration**, and register two synthetic customers (assigned `AC000001` and `AC000002` at `₹0.00`).
+5. **Deposit Simulated Cash:** Log in as the Bank Staff user, open **Cash Deposit & Withdrawal**, and deposit simulated funds into `AC000001`.
+6. **Transfer Funds:** Log in as the first Customer, open **Transfer Funds**, and transfer an amount to `AC000002`.
+7. **Inspect History & Export CSV:** Open **Transaction History** to verify newest-first entries and test **Export CSV Statement**.
+8. **Explore the Integrity Control Center:** Log back in as Administrator to run **System Balance Reconciliation**, execute the isolated **Atomic Rollback Proof Sandbox**, test **Freeze Approvals**, and inspect the **Audit Trail**.
+
+---
+
+## Project Structure
 
 ```text
 Banking_Management_System_JAVA/
-├── pom.xml                           # Maven Java 17 + JavaFX 17 + sqlite-jdbc + JUnit 5
-├── README.md
-├── AGENTS.md
-├── context/                          # Persistent engineering context & session logs
-├── docs/
-│   ├── architecture/                 # Layered architecture, DB, contracts, permissions, tx model
-│   ├── requirements/                 # SRS & prioritized feature matrix
-│   ├── research/                     # External research placeholders
-│   ├── testing/                      # Test plan & demo scenarios
-│   ├── report/                       # TECHNICAL_REPORT_EVIDENCE.md & 12 live PNG screenshots
-│   └── team_handoffs/                # S, P, R module documentation
-└── src/
-    ├── main/java/com/tiet/banking/   # bootstrap, model, dto, exception, db, dao, security, service, util, ui
-    ├── main/resources/               # db/schema.sql & styles/banking.css
-    └── test/java/com/tiet/banking/   # unit, persistence, integration & live GUI tests
+├── pom.xml                           # Java 17, JavaFX 17.0.12, sqlite-jdbc 3.46.1.0, JUnit 5
+├── mvnw / mvnw.cmd                   # Official Apache Maven Wrapper scripts
+├── .mvn/wrapper/                     # Maven Wrapper configuration
+├── src/
+│   ├── main/java/com/tiet/banking/
+│   │   ├── bootstrap/                # BankingApp, Launcher, ServiceRegistry
+│   │   ├── model/                    # Money (long paise), domain enums & records
+│   │   ├── dto/                      # Presentation/service boundary records
+│   │   ├── exception/                # Typed domain, auth, freeze & commit exceptions
+│   │   ├── db/                       # DatabaseManager, TransactionExecutor, BankingUnitOfWork
+│   │   ├── dao/ & dao/jdbc/          # DAO interfaces and Plain JDBC implementations
+│   │   ├── security/                 # Salted PBKDF2 PasswordHasher & SessionManager
+│   │   ├── service/                  # Auth, Customer, Teller, Staff, Admin, Reconciliation, Control
+│   │   ├── util/                     # AppConfig, AppLogger, InputValidator, CsvStatementExporter
+│   │   └── ui/                       # JavaFX auth views & Customer/Staff/Admin dashboards
+│   ├── main/resources/               # db/schema.sql & styles/banking.css
+│   └── test/java/com/tiet/banking/   # Unit, DAO, integration & live JavaFX GUI tests
+├── context/                          # Persistent engineering context, ADRs & session logs
+└── docs/                             # Architecture contracts, requirements, tests & report evidence
 ```
 
 ---
 
-## 5. Report Evidence & Navigation
+## Testing
 
-- **Technical Report Evidence & Diagrams:** [docs/report/TECHNICAL_REPORT_EVIDENCE.md](docs/report/TECHNICAL_REPORT_EVIDENCE.md)
-- **Live Screenshots:** `docs/report/screenshots/` (`01_first_run_admin_setup.png` – `12_admin_audit_trail.png`)
-- **Context & Status:** [context/CURRENT_STATUS.md](context/CURRENT_STATUS.md), [context/IMPLEMENTATION_STATUS.md](context/IMPLEMENTATION_STATUS.md), [context/DECISIONS.md](context/DECISIONS.md), [context/SESSION_LOG.md](context/SESSION_LOG.md)
-- **Architecture & Tests:** [docs/architecture/SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM_ARCHITECTURE.md), [docs/testing/TEST_PLAN.md](docs/testing/TEST_PLAN.md), [docs/testing/DEMO_SCENARIOS.md](docs/testing/DEMO_SCENARIOS.md)
+Run the full suite (12 JUnit 5 tests across 5 test classes: `MoneyValidationTest`, `DatabasePersistenceTest`, `AuthAndRbacTest`, `BankingEngineIntegrationTest`, and `LiveGuiVerificationAndScreenshotTest`):
+
+```bash
+./mvnw clean test          # macOS / Linux
+.\mvnw.cmd clean test      # Windows (PowerShell)
+```
+
+Latest verified result: **12 tests run, 0 failures, 0 errors, 0 skipped**.
+
+- `LiveGuiVerificationAndScreenshotTest` drives the live JavaFX `Scene` and requires an active desktop display; it writes test screenshots to JUnit's temporary directory by default so running tests never modifies tracked repository files under `docs/report/screenshots/`.
+- To run only the non-GUI tests in a headless terminal or CI environment:
+
+```bash
+./mvnw test -DexcludedGroups=gui          # macOS / Linux (11 tests)
+.\mvnw.cmd test -DexcludedGroups=gui      # Windows (PowerShell, 11 tests)
+```
 
 ---
 
-## 6. Academic Simulation Disclaimer
+## Limitations
 
-This project is an **educational simulation** created for **UCS553 — Enterprise Web Application** (TIET, Patiala). It uses synthetic data and simulated money only and makes no claim of RBI regulatory compliance or production readiness.
+- **Academic Simulation:** Built solely for UCS553 coursework evaluation using simulated funds and synthetic customer records.
+- **Not Production Banking Software:** Lacks external payment rails, real KYC/identity verification, multi-branch concurrency infrastructure, and hardened deployment controls.
+- **Local SQLite Security Boundary:** Data is stored in a local `data/banking.db` file; anyone with OS-level filesystem access to that file can inspect or modify it outside the application.
+- **No Regulatory Claims:** Makes no claim of RBI approval, PCI-DSS certification, or statutory banking compliance.
+
+---
+
+## Additional Documentation
+
+- [Technical Report Evidence & Diagrams](docs/report/TECHNICAL_REPORT_EVIDENCE.md)
+- [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) & [Database Design](docs/architecture/DATABASE_DESIGN.md)
+- [Service Contracts](docs/architecture/SERVICE_CONTRACTS.md) & [Role Permissions](docs/architecture/ROLE_PERMISSIONS.md)
+- [Test Plan](docs/testing/TEST_PLAN.md) & [Current Status](context/CURRENT_STATUS.md)

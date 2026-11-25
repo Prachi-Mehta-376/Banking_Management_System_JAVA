@@ -187,10 +187,9 @@ String sql = """
 
 ## 6. Observed Build, Test & Verification Results
 
-- **Build & Test Command:**
+- **Build & Test Command (JDK 17):**
   ```bash
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
-  mvn clean test
+  ./mvnw clean test
   ```
 - **Observed Result:** `BUILD SUCCESS` — **Tests run: 12, Failures: 0, Errors: 0, Skipped: 0**
   - `MoneyValidationTest`: 3 passed (`parsePositive`, invalid/scale rejection, `long` overflow protection)

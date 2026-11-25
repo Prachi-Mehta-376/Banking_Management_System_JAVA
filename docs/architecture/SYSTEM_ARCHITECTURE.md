@@ -1,7 +1,7 @@
 # System Architecture (`SYSTEM_ARCHITECTURE.md`)
 
-> **Version:** M1 v2.0 Specification (`PROPOSED — AWAITING TEAM REVIEW`)
-> **Status:** Conceptual & Contract Specification Only (No Java, SQL, or `pom.xml` Implemented)
+> **Version:** Working Development Baseline (Approved by S — Implemented)
+> **Status:** Implemented & Verified (`src/main/` & `pom.xml`; see [../../context/IMPLEMENTATION_STATUS.md](../../context/IMPLEMENTATION_STATUS.md))
 > **Related Decisions:** `ADR-001` through `ADR-008` in [../../context/DECISIONS.md](../../context/DECISIONS.md)
 
 ---

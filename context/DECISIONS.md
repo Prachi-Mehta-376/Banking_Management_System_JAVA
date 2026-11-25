@@ -1,6 +1,6 @@
 # Architecture Decision Records (`DECISIONS.md`)
 
-> **Governance Rule:** Technical resolution and human sign-off are distinct. Decisions A–F resolved the remaining M1 contract questions technically, so `ADR-001`–`ADR-008` are marked **`RECOMMENDED — AWAITING APPROVAL`**. Do **not** mark any ADR `ACCEPTED` until teammates **S**, **P**, and **R** approve PR #1.
+> **Governance Rule:** Technical resolution and human sign-off are distinct. Decisions A–F resolved the M1 contract questions technically, and **S** approved the working baseline for implementation (PR #1, `5b9fad2`). `ADR-001`–`ADR-008` reflect the **implemented P0 + P1 working baseline** shared with **P** and **R** for onboarding and evaluation; do not fabricate formal sign-off from **P** or **R** until recorded.
 
 ---
 
@@ -23,7 +23,7 @@
 ## 2. Decision Register (`ADR-001` through `ADR-008`)
 
 ### `ADR-001`: Core Technology Stack Alignment with UCS553
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval
 - **Context:** The project must implement a desktop Banking Management System aligned with **UCS553 — Enterprise Web Application** without external enterprise frameworks.
 - **Alternatives:**
@@ -38,7 +38,7 @@
 ---
 
 ### `ADR-002`: Simplified Layered Architecture & Unified Customer Principal
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (M0 drafted; simplified in M1)
 - **Context:** Three teammates (`S`, `P`, `R`) need clear architectural boundaries without bloated wrapper layers or redundant entities.
 - **Alternatives:**
@@ -53,7 +53,7 @@
 ---
 
 ### `ADR-003`: Integer-Paise (`long`) Monetary Storage & `BigDecimal` Boundary Validation
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (Finalized in M1)
 - **Context:** Monetary calculations cannot tolerate floating-point drift (`float`/`double`), SQLite lacks a native `DECIMAL` type, and Java arithmetic must prevent overflow and excessive decimal precision.
 - **Alternatives:**
@@ -68,7 +68,7 @@
 ---
 
 ### `ADR-004`: `TransactionExecutor` Coordination, Audit Atomicity & Uncertain Commit Handling
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (Finalized in M1 via Decisions B, D, E)
 - **Context:** Multi-step financial mutations require one shared JDBC `Connection` (`INV-03`), sensitive admin/staff mutations require accurate audit logging, and commit-time I/O failures must not trigger unsafe automatic retries.
 - **Alternatives:**
@@ -85,7 +85,7 @@
 ---
 
 ### `ADR-005`: Three-Role RBAC, Non-Teller Admin & Read-Only Oversight
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (Finalized in M1 via Decision C)
 - **Context:** Privileges across `CUSTOMER`, `STAFF`, and `ADMIN` must enforce clear operational boundaries at the service layer (`INV-05`, `INV-06`).
 - **Alternatives:**
@@ -99,7 +99,7 @@
 ---
 
 ### `ADR-006`: Equal Peer Module Ownership & Student-Proportionate Simplicity
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval
 - **Context:** Three undergraduate students (`S`, `P`, `R`) collaborate on a shared repository under tight academic deadlines (`UCS553`).
 - **Alternatives:**
@@ -113,7 +113,7 @@
 ---
 
 ### `ADR-007`: Balance-Plus-Transaction-Journal Model & Non-Destructive Reconciliation
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (Revised from M0 single-table draft)
 - **Context:** Transfers and deposits need atomic journal tracking (`INV-08`, `INV-09`), zero-sum transfer checks (`INV-04`), and P1 balance reconciliation (`INV-11`) without enterprise general-ledger complexity.
 - **Alternatives:**
@@ -127,7 +127,7 @@
 ---
 
 ### `ADR-008`: First-Run Admin Bootstrap, Registration, `AC000001` Account Numbers & v1 Lifecycle
-- **Status:** `RECOMMENDED — AWAITING APPROVAL`
+- **Status:** `WORKING BASELINE (APPROVED BY S — IMPLEMENTED)`
 - **Date:** Pending Team Approval (Finalized in M1 via Decisions A, F)
 - **Context:** M0 left open initial administrator setup without default passwords, customer registration vs. account creation, synthetic account-number generation, and v1 account statuses.
 - **Alternatives:**

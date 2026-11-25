@@ -33,5 +33,5 @@
 
 - **Security (`ADR-005`, `ADR-008`):** Per-user salted `PBKDF2WithHmacSHA256` password hashes (`password_hash`, `password_salt`, `password_algo`), first-run admin bootstrap without hardcoded passwords, and service-layer RBAC + ownership checks via `UserSession`.
 - **Exceptions (`exception/`):** Typed validation, auth, authorization, insufficient-funds, frozen-account, conflict, and persistence exceptions.
-- **Target Invariants:** `INV-01` through `INV-12` in [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md#4-financial--security-invariants-inv-01-through-inv-12) (design targets; `NOT EXECUTED` yet).
-- **Build (M2):** Maven + Java 17 (`pom.xml` intentionally absent in M1).
+- **Implemented Invariants:** `INV-01` through `INV-12` in [../docs/architecture/SYSTEM_ARCHITECTURE.md](../docs/architecture/SYSTEM_ARCHITECTURE.md#4-financial--security-invariants-inv-01-through-inv-12) (`IMPLEMENTED & VERIFIED` across `src/test/`).
+- **Build & Launch:** Maven + Java 17 (`pom.xml`, plus official Apache Maven Wrapper `mvnw` / `mvnw.cmd`).

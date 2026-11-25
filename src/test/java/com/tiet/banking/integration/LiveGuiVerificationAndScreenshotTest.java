@@ -32,9 +32,11 @@ import javafx.scene.image.WritableImage;
 import javafx.stage.Stage;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@Tag("gui")
 class LiveGuiVerificationAndScreenshotTest {
 
     @TempDir
@@ -54,7 +56,10 @@ class LiveGuiVerificationAndScreenshotTest {
     @Test
     void exercisesCompleteGuiWorkflowAcrossRolesAndCapturesGenuineScreenshots() throws Exception {
         Path dbFile = tempDir.resolve("gui_e2e.db");
-        Path screenshotDir = Path.of("docs/report/screenshots");
+        String configuredScreenshotDir = System.getProperty("banking.screenshots.dir");
+        Path screenshotDir = (configuredScreenshotDir != null && !configuredScreenshotDir.isBlank())
+                ? Path.of(configuredScreenshotDir)
+                : tempDir.resolve("screenshots");
         Files.createDirectories(screenshotDir);
 
         AppConfig config = new AppConfig(dbFile, 10_000, 5_000);
