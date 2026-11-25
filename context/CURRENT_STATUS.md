@@ -1,7 +1,7 @@
 # Current Status (`CURRENT_STATUS.md`)
 
-> **Last Updated:** 2026-11-17 (M1 Finalization — Contracts Frozen on Branch Pending PR #1 Approval)
-> **Rule:** Never report code, builds, or tests as implemented or passing unless verified in the repository.
+> **Last Updated:** 2026-11-25 (Full P0 + P1 Implementation, Automated Tests & Live GUI Verification Complete)
+> **Rule:** Never report code, builds, or tests as passing unless observed in the current repository.
 
 ---
 
@@ -9,27 +9,20 @@
 
 | Workstream | Status | Notes |
 | :--- | :--- | :--- |
-| **M0 Repository & Context Foundation** | `COMPLETE` | Committed on `main` (`392994037b4f71201e445c65e7062076844196f7`) |
-| **M1 Architecture v2.0 & Contract Freeze** | `FINALIZED ON BRANCH — AWAITING PR #1 APPROVAL` | Decisions A–F resolved and `S`/`P`/`R` contracts frozen on `docs/m1-architecture-contracts`; ADRs marked `RECOMMENDED — AWAITING APPROVAL` |
-| **Banking Engine Implementation (`S`)** | `NOT STARTED` | Zero `.java` files created (`src/` contains `.gitkeep` only) |
-| **Database & JDBC Implementation (`P`)** | `NOT STARTED` | Zero `.sql` schemas (`schema.sql`), DAO classes, or `.db` files created |
-| **JavaFX UI Implementation (`R`)** | `NOT STARTED` | Zero JavaFX views, controllers, FXML, or CSS files created |
-| **Build Configuration (`pom.xml`)** | `NOT STARTED` | Intentionally excluded during M0/M1 documentation phases |
-| **Automated & Manual Tests** | `NOT EXECUTED` | 17 scenarios (`TC-01`–`TC-17`) defined in `TEST_PLAN.md`; `0` executed |
-| **Gemini Deep Research** | `PENDING REVIEW` | External research output has not yet been integrated into `docs/research/` |
+| **M0 Repository & Context Foundation** | `COMPLETE` | Committed on `main` (`3929940`) |
+| **M1 Architecture v2.0 & Contract Spec** | `COMPLETE` | Merged into `main` via PR #1 (`5b9fad2`) |
+| **Maven Configuration & Foundation (`pom.xml`)** | `IMPLEMENTED & VERIFIED` | Java 17, JavaFX 17.0.12, `sqlite-jdbc` 3.46.1.0, JUnit 5.10.3 |
+| **Database & JDBC Persistence (`db/`, `dao/`, `schema.sql`)** | `IMPLEMENTED & VERIFIED` | 7 tables, `TransactionExecutor`, `AC000001` atomic assignment, `PRAGMA foreign_keys = ON` |
+| **Auth, Security & Core Banking Engine (`security/`, `service/`)** | `IMPLEMENTED & VERIFIED` | Salted `PBKDF2`, RBAC, `Money` paise arithmetic, all 7 services wired in `ServiceRegistry` |
+| **JavaFX Desktop Application (`ui/*`, `banking.css`)** | `IMPLEMENTED & VERIFIED` | Auth views + Customer, Staff & Admin dashboards + Integrity Control Center |
+| **Automated & Live GUI Tests (`src/test/`)** | `PASSED (12/12)` | `mvn clean test`: 12 tests run, 0 failures, 0 errors, 0 skipped; 12 genuine PNG screenshots captured |
+| **Optional P2 Extensions** | `DEFERRED` | Fraud alerts, disputes, and multi-account types deferred per priority policy |
+| **Gemini Deep Research** | `PENDING REVIEW` | External research remains unpopulated; zero fabricated regulatory claims |
 
 ---
 
-## 2. Milestones
+## 2. Current Verification Snapshot
 
-- **Completed Milestone (`M0`):** Repository foundation committed on `main`.
-- **Current Milestone (`M1`):** Architecture v2.0 & Contract Specification finalized on branch `docs/m1-architecture-contracts` (PR #1), resolving Decisions A–F (`AC000001` generation, P0 without client `idempotencyKey`, read-only `ADMIN` search, same-tx `audit_events` + `java.util.logging` failures, `CommitOutcomeUncertainException` policy, and atomic first-run `ADMIN` bootstrap).
-- **Next Milestone (`M2`):** After PR #1 team approval and merge to `main`, create `pom.xml` (`feature/project-foundation`) and begin parallel implementation of persistence (`P`), banking engine (`S`), and JavaFX views (`R`).
-
----
-
-## 3. Repository & Git Snapshot
-
-- **Workspace Root:** `Banking_Management_System_JAVA/` (repository root)
-- **Active Documentation Branch:** `docs/m1-architecture-contracts` (open PR #1 targeting `main`)
-- **Stable Integration Branch:** `main` (`392994037b4f71201e445c65e7062076844196f7` — unmodified pending PR #1 review/approval)
+- **Build & Test:** `mvn clean test` passed (`12` tests across `5` test classes, `0` failures/errors/skipped).
+- **GUI Smoke Launch:** `mvn -q javafx:run` launched cleanly on Temurin JDK 17 (`arm64`) against temporary isolated DB.
+- **Report Evidence:** Prepared [../docs/report/TECHNICAL_REPORT_EVIDENCE.md](../docs/report/TECHNICAL_REPORT_EVIDENCE.md) and 12 live PNG screenshots under `docs/report/screenshots/`.

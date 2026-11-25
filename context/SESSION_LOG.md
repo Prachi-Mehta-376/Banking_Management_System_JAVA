@@ -108,3 +108,27 @@
   - External Gemini Deep Research remains `PENDING REVIEW`.
 - **Next Actions:**
   - Team reviews and approves PR #1; once merged, begin M2 with `feature/project-foundation` (`pom.xml` + shared `model`/`dto`/`exception`).
+
+---
+
+## Session 4 — 2026-11-25 (Full P0 + P1 Implementation, Testing, Live GUI Verification & Report Evidence)
+- **Contributor:** Deadline-Mode Full Implementation Session (building on M1 baseline `5b9fad2`)
+- **Branch:** `main`
+- **Commit:** Checkpoint commits `9838eaf`, `d20faa5`, `7ac2772`, `03a0303`, `5304382` + report/status documentation commit
+- **Objective:** Implement the complete planned P0 + P1 Banking Management System (Maven, SQLite, Plain JDBC, Auth/RBAC, Banking Services, JavaFX UI, Banking Integrity Control Center), verify with JUnit 5 + live JavaFX GUI execution, capture genuine screenshots, and prepare academic report evidence.
+- **Work Completed:**
+  - Installed Apache Maven `3.10.2` via Homebrew (`Temurin JDK 17.0.20.1` `arm64`).
+  - Configured `pom.xml` (`javafx-controls:17.0.12`, `sqlite-jdbc:3.46.1.0`, `junit-jupiter:5.10.3`, `javafx-swing:17.0.12`).
+  - Implemented `model/`, `dto/`, `exception/`, `util/`, `db/` (`DatabaseManager`, `JdbcTransactionExecutor`), `dao/` & `dao.jdbc/` (7 interfaces + 7 implementations), `security/` (`PasswordHasher`, `SessionManager`), `service/` (all 7 services), `bootstrap/` (`ServiceRegistry`, `BankingApp`, `Launcher`), `schema.sql`, `banking.css`, and JavaFX `ui/{common,auth,customer,staff,admin}/`.
+  - Authored 5 JUnit 5 test suites (`MoneyValidationTest`, `DatabasePersistenceTest`, `AuthAndRbacTest`, `BankingEngineIntegrationTest`, `LiveGuiVerificationAndScreenshotTest`).
+  - Captured 12 genuine live JavaFX screenshots under `docs/report/screenshots/` and authored `docs/report/TECHNICAL_REPORT_EVIDENCE.md`.
+- **Verification Performed:**
+  - `mvn clean test` passed (`12` tests run, `0` failures, `0` errors, `0` skipped).
+  - `mvn -q javafx:run` launched cleanly on Temurin JDK 17 (`-Dbanking.db.path=/tmp/banking_smoke.db`).
+  - Verified all `12` PNG screenshots visually/by size (`31K`–`88K`).
+- **Decisions:**
+  - Implemented `idempotency_records` (P1 `F-P1-05`) alongside overloaded optional-key service methods while keeping P0 no-key signatures intact.
+  - Deferred optional `P2` items (`F-P2-01`–`F-P2-04`) to protect the tested P0 + P1 submission baseline.
+- **Blockers:** None for application execution; student names/roll numbers & guide details in `TECHNICAL_REPORT_EVIDENCE.md` left blank for manual fill-in.
+- **Next Actions:**
+  - Fill in student/guide cover details if needed and run `mvn javafx:run` for the UCS553 demonstration.
